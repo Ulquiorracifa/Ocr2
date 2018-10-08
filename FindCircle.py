@@ -29,6 +29,8 @@ def jwkj_get_filePath_fileName_fileExt(filename):  # 提取路径
 
 
 def findSymbol(filePath):
+    # define an area [600-1000, 950-1450]
+
     if os.path.exists(
             jwkj_get_filePath_fileName_fileExt(filePath)[0] + "tmp/" + jwkj_get_filePath_fileName_fileExt(filePath)[
                 1]) == False:
@@ -64,6 +66,10 @@ def findSymbol(filePath):
         pos = ac.find_template(imsrc, imobj, 0.5)
     # print(type(pos))
     circle_center_pos = pos['result']
+    if not (pos['result'][0] > 600 and pos['result'][0] < 1000 and pos['result'][1] > 950 and pos['result'][1] < 1450):
+        imobj = ac.imread('figureX1.jpg')
+        pos = ac.find_template(imsrc, imobj, 0.5)
+        circle_center_pos = pos['result']
     circle_radius = 50
     color = (0, 255, 0)
     line_width = 10
@@ -75,4 +81,4 @@ def findSymbol(filePath):
     return circle_center_pos[0], circle_center_pos[1]
     # draw_circle(imsrc, circle_center_pos, circle_radius, color, line_width)
 
-# print(findSymbol('Image_00179.jpg')[0])
+#print(findSymbol('Image_00188.jpg'))
