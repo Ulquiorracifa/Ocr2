@@ -67,6 +67,7 @@ def SmtcCrt(sentence, sentenceType, chooseMod):
             {'str':'1','belief':0.8},
             {'str':'2','belief':1}
     ]'''
+    print('sentenceComb:  ')
     print(sentenceComb)
 
     maxBelief = -1
@@ -231,17 +232,134 @@ def copy_dict(d):
             res[key] = copy_dict(value)
     return res
 '''
+
+
+def getDistanceBetw(str1, str2):
+    dc = ComputeDistance.load_dict('.json')  # 取全部形似字
+    wt = dc[str1][str2]
+
+    # wordTemp接口getFamiliar(word)
+    # wordTemp[word] type:dict
+    '''wtf = []
+    for i in wt:
+        wtf.append(i)'''
+    return wt
+    # 返回两字向量差
+
+
+def FuzzyCrt(sentence, sentenceType, chooseMod):
+    # sentence 为list [字，置信度]   {word , confidentValue}
+    '''tp = {
+    'word': ['一','二'],
+    'belief': [0.8,1]
+}   '''
+
+    sentenceComb = {
+        'porterStr': []
+    }
+
+    '''    {
+    'porterStr':
+            'str':'',
+            'belief':[]
+         }
+    'originSentence':'originStr'
+    }
+    '''
+    global standardCfdValue
+    # originSent = sentence[:][0]
+    '''for index, i in enumerate(sentence):
+        #[]
+        if i[1] < standardCfdValue:
+            wtf = getFamiliar(i[0],index)
+            sentenceComb.append(getFamiliar(i[0],index))
+        else:
+            sentenceComb.append([sentence[index],index])
+
+    Result = []
+    selectFamiliar(sentence, [], 0, Result)
+
+    for c in Result:
+        getWholeConfdt(c)
+    '''
+    # 检测多字
+    for index, mm in enumerate(sentence['word']):
+        words = ''.join(sentence['word'][:index] + sentence['word'][index + 1:])
+        sFPCM2 = SemanticCorrect.redict.init(words)
+
+        if sFPCM2 > 0:
+            return words
+
+    '''for index, i in enumerate(sentence['word']):
+        if sentence['belief'][index] < standardCfdValue:
+            wtf = getFamiliar(i)
+            wtfBelief = getBelief(wtf)
+            sentenceProduct(sentenceComb, wtf, wtfBelief)
+        else:
+            sentenceAdd(sentenceComb, sentence['word'][index], sentence['belief'][index])
+    '''
+    sentenceComb['originSentence'] = ''.join(sentence['word'])
+
+    sentenceComb['porterStr'].append({'str': sentence['word'], 'belief': sentence['belief']})
+
+    for index, c in enumerate(sentence['word']):
+        if sentence['belief'][index] < standardCfdValue:
+            words = ''.join(sentence['word'][:index] + '*' + sentence['word'][index + 1:])
+            belf = sentence['belief'][:index] + [1.0] + sentence['belief'][index + 1:]
+            sentenceComb['porterStr'].append({'str': words, 'belief': belf})
+
+    '''    'porterStr':[
+            {'str':'1','belief':0.8},
+            {'str':'2','belief':1}
+    ]'''
+    print(sentenceComb)
+
+    # 暂时只接受地点
+    if chooseMod == 1:
+
+        for indexM, m in enumerate(sentenceComb['porterStr']):
+
+            sFPCM1 = SemanticCorrect.redict.useFzdict(m['str'])
+            # 模糊查询 返回list 或int
+
+            # return类型  int 或list
+
+            if type(sFPCM1) == type([]):
+
+                if len(sFPCM1) == 1:
+                    return sFPCM1[0]
+
+                iStr = 0
+                while iStr < len(m['str']):
+                    if m['str'][iStr] == '*':
+                        break
+                    iStr += 1
+                if iStr == len(m['str']):
+                    print('找不到替换标识符‘*’')
+
+                maxSfp = -1
+                maxSfpIndex = sentenceComb['originSentence']
+                for c in sFPCM1:
+                    if getDistanceBetw[sentenceComb['originSentence'][iStr]][c[iStr]] > maxSfp:
+                        maxSfpIndex = c
+
+                return maxSfpIndex
+            else:
+
+                return sentenceComb['originSentence']
+                # 火车票单个词识别
+
+
 # print(getFamiliar('咱'))
 # print(getFamiliar('滨'))
-'''
-sentence = {
-#    'word': ['浙', '江', '省', '绍', '兴', '市'],
-        'word': ['长', '卷', '长', '兴'],
-        'belief': [0.9,0.7,0.9,1.0]
-    #'word': ['哈', '尔', '滴'],
-    #'belief': [0.9,0.9,0.4]
-
-#    'belief': [0.9, 0.7, 0.9, 1.0, 1.0, 1.0]
-}
-print(SmtcCrt(sentence,1,1))
-'''
+#
+# sentence = {
+# #    'word': ['浙', '江', '省', '绍', '兴', '市'],
+#         'word': ['长', '卷', '长', '兴'],
+#         'belief': [0.9,0.7,0.9,1.0]
+#     #'word': ['哈', '尔', '滴'],
+#     #'belief': [0.9,0.9,0.4]
+#
+# #    'belief': [0.9, 0.7, 0.9, 1.0, 1.0, 1.0]
+# }
+# print(SmtcCrt(sentence,1,1))
