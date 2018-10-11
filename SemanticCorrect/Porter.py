@@ -108,6 +108,18 @@ def init():
     print(ftp)
 
 
+def FuzzyPorterFront(sTR, beliefLevel):
+    # 替换一位
+
+    fp = finalPorter()
+    strTemp = copy.deepcopy(sTR)
+    beliefLevelTemp = copy.deepcopy(beliefLevel)
+
+
+# init()
+
+
+
 '''
 str1={
         'str': '长春长兴',
