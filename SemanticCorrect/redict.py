@@ -21,9 +21,7 @@ print(selectFromPydict("大黄蜂"))
 -3 #错误代码，词典中没有这个词
 '''
 
-import time
 import re
-import json as ijson
 
 # 以下函数提供查询方
 # 需要先给全局变量赋值，示例：global_list = readTXTintoPydictwithFreq("火车站.txt")
@@ -45,19 +43,7 @@ def selectFromPydict(str):
 # 入口参数为“火车站.txt”。示例：readTXTintoPydict("火车站.txt")
 def readTXTintoPydictwithFreq(txtName):
     pydict = {}
-    freq_sum = -1  # 错误代码，初始值，程序未正常运行
-    freq_max = -1  # 错误代码，初始值，程序未正常运行
-    freq_q = -1  # 错误代码，初始值，程序未正常运行
-    with open(txtName, encoding="gbk") as txt:  # 这次读文件仅找最大值
-        for line1 in txt:
-            freq1 = re.sub('[^0-9]', "", line1)  # 只取数字
-            freq1 = freq1.replace(" ", "").strip()
-            if freq1 == '':
-                freq1 = 1  # 如果字典中没有频数，则设为默认值
-            freq1 = int(freq1)
-            freq_sum += freq1
-            if freq_max < freq1:
-                freq_max = freq1
+    p = ''
     with open(txtName, encoding="gbk") as txt:
         for line in txt:
             temp1 = re.sub("[A-Za-z0-9\!\%\[\]\#\+\&\*\-\+\—\.\,\。\·\'\"\{\}\:]", "", line)
@@ -66,10 +52,9 @@ def readTXTintoPydictwithFreq(txtName):
             freq = re.sub('[^0-9]', "", line)  # 只取数字
             freq = freq.replace(" ", "").strip()
             if freq == '':
-                freq = 1  #如果字典中没有频数，则设为默认值
+                freq = 1
             freq = int(freq)
-            freq_q = freq / freq_max
-            pydict[temp1] = freq_q
+            pydict[temp1] = freq
     # print(pydict)
     return pydict
 
@@ -105,37 +90,15 @@ def readTXTintoJSON(txtName, jsonName):
 # 读带有单词频数的字典，并输出json
 def readTXTintoJSONwithFreq(txtName, jsonName):
     dict_list = []
-
-    freq_sum = -1  # 错误代码，初始值，程序未正常运行
-    freq_max = -1  # 错误代码，初始值，程序未正常运行
-    freq_q = -1  # 错误代码，初始值，程序未正常运行
-    with open(txtName, encoding="gbk") as txt:  # 这次读文件仅找freq_max
-        for line1 in txt:
-            freq1 = re.sub('[^0-9]', "", line1)  # 只取数字
-            freq1 = freq1.replace(" ", "").strip()
-            if freq1 == '':
-                freq1 = 1  # 如果字典中没有频数，则设为默认值
-            freq1 = int(freq1)
-            freq_sum += freq1
-            if freq_max < freq1:
-                freq_max = freq1
-
     with open(txtName, "r", encoding="gbk") as txt:
         # print(txt.read()) #只要在这里先打印了txt的内容，下面的for就不再执行？
         for line in txt:
             temp1 = re.sub("[A-Za-z0-9\!\%\[\]\#\+\&\*\-\+\—\.\,\。\·\'\"\{\}\:]", "", line)
             temp1 = temp1.replace(" ", "").strip()
             hashcode = obtainUTFHashCode(temp1)
-            freq = re.sub('[^0-9]', "", line)  # 只取数字
-            freq = freq.replace(" ", "").strip()
-            if freq == '':
-                freq = 1  # 如果字典中没有频数，则设为默认值
-            freq = int(freq)
-            freq_q = freq / freq_max
-            dict_list.append("\"" + temp1 + "\"" + ":" + "[" + str(hashcode) +
-                             "," + "freq" + str(freq_q) + "]")
+            dict_list.append("\"" + temp1 + "\"" + ":" + "[" + str(hashcode) + "," + "freq" + "]")
         # print("写入信息打印：\n")
-        #print(dict_list)
+        # print(dict_list)
 
     with open(jsonName, "a+", encoding="utf-8") as json:
         json.write("{")
@@ -202,89 +165,10 @@ print(selectFromPydict("大黄蜂"))
 '''
 
 
-# 以下码段用于读写json，并重组为用于模糊查询的json
-# 入口参数为“输入文件名.json，输出文件名.json”。示例：readTXTintoJSON("StationDict.json", "fuzzyStationDict.json")
-def fuzzydict2file(jsonName, fuzzyFileName):
-    one2starsdict = {}
-    star2onedict = {}
-    with open(jsonName, "r", encoding="utf-8") as jsonfile:
-        jsondict = ijson.load(jsonfile)
-    for keys in jsondict:
-        templist = []
-        for i in range(len(keys)):
-            tempstr = ''
-            for j in range(len(keys)):
-                if i == j:
-                    tempstr += '*'
-                else:
-                    tempstr += keys[j]
-            templist.append(tempstr)
-        one2starsdict[keys] = templist
-    # with open("one2stars.json", "w", encoding="utf-8") as one2starsfile:
-    #     ijson.dump(one2starsdict, one2starsfile, ensure_ascii=False, indent=4)
-    # 保存中间结果
-    # with open("one2stars.json", "r", encoding="utf-8") as one2starsfile2:
-    #     one2starsdict2 = ijson.load(one2starsfile2)
-    for keys in one2starsdict:
-        for e in one2starsdict[keys]:
-            star2onedict[e] = [keys]
-    for keys in one2starsdict:
-        for e in one2starsdict[keys]:
-            if e in star2onedict.keys():
-                if keys not in star2onedict[e]:
-                    star2onedict[e].append(keys)
-            else:
-                star2onedict[e] = [keys]
-    # print(star2onedict)
-    with open(fuzzyFileName, "w", encoding="utf-8") as star2onefile:
-        ijson.dump(star2onedict, star2onefile, ensure_ascii=False, indent=4)
-
-
-def readJSONintoDICT(jsonName):
-    with open(jsonName, "r", encoding="utf-8") as jsonfile:
-        jsondict = ijson.load(jsonfile)
-    return jsondict
-
-
-# 以下代码提供查询方法
-# 入参：str，返回值为list；入参中不确定的char请用*代替，有且仅有一个*；
-def selectFromFzdict(str):
-    flag = -1  # 错误代码，初始值，程序未正常运行
-    if str in global_dict.keys():
-        flag = global_dict[str]  # 查询完成，所查词在字典中,并返回list
-    else:
-        flag = -1
-    return flag
-
-
 def init(str):
     global global_dict
     global_dict = readTXTintoPydictwithFreq("D:/Development/pycharm_workspace/Ocr2/SemanticCorrect/火车站.txt")
 
     return selectFromPydict(str)
 
-
-def initFile(fileTxt):
-    fileJsonName = fileTxt[:len(fileTxt) - 4] + 'Json.json'
-
-    readTXTintoJSON(fileTxt, fileTxt[:len(fileTxt) - 4] + '.json')
-    fuzzydict2file(fileTxt[:len(fileTxt) - 4] + '.json', fileJsonName)
-
-
-def useFzdict(str):
-    global global_dict
-    global_dict = readJSONintoDICT('火车站Json.json')
-    return selectFromFzdict(str)
-
-
-# #以下代码段用于函数测试
-# #从搜狗词库.txt到模糊查询.json.dict
-# readTXTintoJSON("火车站.txt", "taobao.json")
-# fuzzydict2file("taobao.json", "Fuzzytaobao.json")
-# global_dict = readJSONintoDICT("Fuzzytaobao.json")
-# print("这里打印测试结果：宝宝金水-宝宝*水！！！")
-# initFile('火车站.txt')
-# print(selectFromFzdict('成*'))
-print(useFzdict("*都"))
-
-#print(init("长春"))
+# print(init("长春"))
