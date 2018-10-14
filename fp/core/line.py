@@ -1,7 +1,6 @@
 import numpy as np
 import cv2
 
-
 def line_angle(line):
     '''return angle range [-90., 90.)'''
     x0, y0, x1, y1 = line
@@ -18,7 +17,6 @@ def line_length(line):
     x0, y0, x1, y1 = line
     return np.sqrt((x1 - x0) ** 2 + (y1 - y0) ** 2)
 
-
 def cos_intersect_angle(line0, line1):
     '''Get the cosine of the intersection angle 
     formed by two lines'''
@@ -29,7 +27,6 @@ def cos_intersect_angle(line0, line1):
     v2 = np.array([x3 - x2, y3 - y2], np.float64)
     v2 /= np.linalg.norm(v2)
     return np.dot(v0, v2)
-
 
 def intersect_point(line0, line1):
     '''Get the intersection point of two lines'''
@@ -43,7 +40,6 @@ def intersect_point(line0, line1):
     l1 = np.cross(v2, v3)
     cp = np.cross(l0, l1)
     return cp[0] / cp[2], cp[1] / cp[2]
-
 
 def intersect_point_dist(line, cross_point):
     x0, y0, x1, y1 = line

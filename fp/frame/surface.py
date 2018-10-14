@@ -3,38 +3,51 @@ import numpy as np
 import cv2
 
 from ..core import quad
-
 importlib.reload(quad)
 from ..core import trans
-
 importlib.reload(trans)
 from ..core import line
-
 importlib.reload(line)
 
 from . import _surface_check
-
 importlib.reload(_surface_check)
 from ._surface_check import is_crop_ready
 
 from ..util import check
-
 importlib.reload(check)
-
 
 class Find(object):
     '''find rects in image'''
-
     def __init__(self):
         self.approx_ratio = 0.02
         self.min_area = 60
 
     def __call__(self, mask):
-        quads, conts = quad.find_quads(mask, approx_ratio=self.approx_ratio,
-                                       min_area=self.min_area)
-        if len(conts) == 0:
-            return None, None
-        boxes = [cv2.minAreaRect(cont) for cont in conts]
+        # quads, conts = quad.find_quads(mask, approx_ratio=self.approx_ratio,
+        #                               min_area=self.min_area)
+        _, contours, _ = cv2.findContours(mask.copy(), mode=cv2.RETR_EXTERNAL,
+                                          method=cv2.CHAIN_APPROX_SIMPLE)
+        quads = []
+        conts = []
+        for cont in contours:
+            # approximate the contour
+            peri = cv2.arcLength(cont, True)
+            approx = cv2.approxPolyDP(cont, self.approx_ratio * peri, True)
+
+            # if the approximated contour has four points, then assume that the
+            # contour is a book -- a book is a rectangle and thus has four vertices
+            if len(approx) == 4 and cv2.isContourConvex(approx) \
+                    and cv2.contourArea(approx) > self.min_area:
+                # approx.shape is (4,1,2), so, use squeeze
+                quads.append(np.squeeze(approx))
+                conts.append(cont)
+
+        quads = np.array(quads)
+
+        if len(conts) > 0:
+            boxes = [cv2.minAreaRect(cont) for cont in conts]
+        else:
+            boxes = [cv2.minAreaRect(cont) for cont in contours]
         areas = [box[1][0] * box[1][1] for box in boxes]
         idx = np.argmax(areas)
 
@@ -46,7 +59,7 @@ class Find(object):
             box[2] += 90.0
             if box[2] >= 360.0:
                 box[2] -= 360.0
-        return quads[idx], box
+        return box  #quads[idx]
 
 
 class Crop(object):
@@ -58,14 +71,12 @@ class Crop(object):
         dsize = int(dsize[0]), int(dsize[1])
         return trans.rotate_crop(image, center, angle, dsize)
 
-
 def _restore_box(box, fx):
     ifx = 1. / fx
     center, dsize, angle = box
     center = ifx * center[0], ifx * center[1]
     dsize = ifx * dsize[0], ifx * dsize[1]
     return center, dsize, angle
-
 
 class Adjust(object):
     def __init__(self, line_length_ratio=0.2):
@@ -101,7 +112,6 @@ class Adjust(object):
         _lines, width, prec, nfa = self.lsd.detect(sub_im)
         _lines = np.squeeze(_lines)
         return _lines
-
 
 class Detect(object):
     def __init__(self, aspect_ratio_th=0.5, adjust_pars={}, debug=False):
@@ -146,9 +156,8 @@ class Detect(object):
         if self.debug is not None:
             self.debug['mask'] = mask
 
-        quad, box = self.find_frame(mask)
+        box = self.find_frame(mask)  # quad,
         if self.debug is not None:
-            self.debug['quad'] = quad
             self.debug['box'] = box
 
         if box is None:

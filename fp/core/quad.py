@@ -1,7 +1,6 @@
 import numpy as np
 import cv2
 
-
 def find_quads(binary_image, approx_ratio=0.02, min_area=50):
     _, contours, _ = cv2.findContours(binary_image.copy(), mode=cv2.RETR_EXTERNAL,
                                       method=cv2.CHAIN_APPROX_SIMPLE)
@@ -21,7 +20,6 @@ def find_quads(binary_image, approx_ratio=0.02, min_area=50):
             conts.append(cont)
 
     return np.array(quads), conts
-
 
 def draw_quad(image, quad):
     cv2.line(image, tuple(quad[0]), tuple(quad[1]), color=(255, 0, 0))

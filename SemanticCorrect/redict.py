@@ -285,6 +285,6 @@ def useFzdict(str):
 # print("这里打印测试结果：宝宝金水-宝宝*水！！！")
 # initFile('火车站.txt')
 # print(selectFromFzdict('成*'))
-print(useFzdict("*都"))
+# print(useFzdict("*都"))
 
 #print(init("长春"))

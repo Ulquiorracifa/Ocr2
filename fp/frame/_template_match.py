@@ -7,7 +7,6 @@ import torchvision
 
 import fp.config
 
-
 class TemplateMatch(object):
     def __init__(self, cost, warp,
                  learning_rate=0.2, iteration=2000, num_try=20,
@@ -21,7 +20,7 @@ class TemplateMatch(object):
         if self.debug is not None:
             print('TemplateMatch is in debug mode')
 
-    def __call__(self, anchors_mean, center_mean, aligns,
+    def __call__(self, anchors_mean, center_mean, aligns, 
                  detected_candidates, para_init=None):
         '''input should be tensors'''
         if self.debug is not None:
@@ -42,14 +41,14 @@ class TemplateMatch(object):
                     loss = _loss
                     para = _para
 
-        para, warped_anchors, loss = self._one_try(anchors_mean, center_mean, aligns,
+        para, warped_anchors, loss = self._one_try(anchors_mean, center_mean, aligns, 
                                                    detected_candidates, para)
         return para, warped_anchors
 
     def _one_try(self, anchors_mean, center_mean, align, detected_candidates, para):
         '''input should be tensors'''
         # t = torch.tensor(t_init, requires_grad=True)
-
+        
         if self.debug is not None:
             print('{:>4s}|{:>10s}|{:^24s}|{:^24s}'.format('i', 'loss', 't', 't_grad'))
 
@@ -82,7 +81,7 @@ class TemplateMatch(object):
 
         return para.detach().cpu(), warped_anchors.detach().cpu(), loss.detach().item()
 
-    # def _anchor_candiates(self, warped_rects):
+    #def _anchor_candiates(self, warped_rects):
     #    x, y = warped_rects[:, 0], warped_rects[:, 1]
     #    w, h = warped_rects[:, 2], warped_rects[:, 3]
     #    xl, xc, xr = x, x + w / 2, x + w

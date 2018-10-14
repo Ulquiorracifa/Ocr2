@@ -11,8 +11,7 @@ import torchvision
 
 def rect_to_limit(rect):
     x, y, w, h = rect
-    return x, x + w, y, y + h
-
+    return x, x + w, y, y+h
 
 def rect_overlap_area(rect, rect_ref):
     x0, x1, y0, y1 = rect_to_limit(rect)
@@ -35,19 +34,17 @@ def bounding_rect(rects):
     y1 = np.min([y1 for x0, x1, y0, y1 in limits])
     return np.array([x0, y0, x1 - x0, y1 - y0], np.float32)
 
-
 def approx(x0, x1):
     '''0 is best'''
     return abs(x0 - x1) / (x0 + x1)
 
-
 def anchor_to_rect(anchor, align_code):
     rect = anchor.clone()
-    rect[1] -= rect[3] / 2
+    rect[1] -= rect[3]/2
     if align_code == 2:
         rect[0] -= rect[2]
     elif align_code == 0 or align_code == 3:
-        rect[0] -= rect[2] / 2
+        rect[0] -= rect[2]/2
     return rect
 
 

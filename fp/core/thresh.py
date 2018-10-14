@@ -5,7 +5,6 @@ debug = True
 if debug:
     import matplotlib.pyplot as pl
 
-
 def adaptive_otsu_surface(image, rows, cols):
     '''Adapitve Otsu threshold method'''
     assert len(image.shape) == 2
@@ -31,7 +30,6 @@ def adaptive_otsu(image, rows, cols):
     imblur = cv2.GaussianBlur(image, (3, 3), 1.2)
     result = cv2.compare(imblur, thmap, cv2.CMP_GT)
     return result
-
 
 def local_mean_surface(image, ksize, c):
     surf = cv2.boxFilter(image, ddepth=-1, ksize=ksize)
@@ -116,7 +114,7 @@ class HybridThreshold(_Threshold):
         # surf = cv2.addWeighted(mean_surf, 0.8, otsu_surf, 0.2, 0.0)
         result = cv2.compare(imblur, surf, cv2.CMP_GT)
 
-        # if debug:
+        #if debug:
         #    pl.figure(figsize=(15,18))
         #    pl.subplot(4,2,1)
         #    pl.imshow(otsu_surf, 'gray')
@@ -135,5 +133,5 @@ class HybridThreshold(_Threshold):
         #    pl.subplot(4,2,8)
         #    pl.imshow(result, 'gray')
         #    
-
+            
         return result

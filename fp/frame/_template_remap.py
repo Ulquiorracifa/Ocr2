@@ -8,7 +8,6 @@ LEFT = 1
 RIGHT = 2
 CENTER = 3
 
-
 def align_code(name):
     '''
     example:
@@ -22,7 +21,6 @@ def align_code(name):
     space_l = 2 if name[0] == '_' else 0
     space_r = 1 if name[-1] == '_' else 0
     return space_l + space_r
-
 
 class ReMap(object):
     def __init__(self, align_code, std_size):
@@ -79,7 +77,6 @@ class ReMap(object):
 def anchors_to_rects(aligns, anchors, std_size, inline=False):
     return torch.stack([ReMap(align, std_size).to_rect(anchor, inline) \
                         for align, anchor in zip(aligns, anchors)])
-
 
 def rects_to_anchors(aligns, rects, std_size, inline=True):
     return torch.stack([ReMap(align, std_size).to_anchor(rect, inline) \

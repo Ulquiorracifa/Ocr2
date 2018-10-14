@@ -10,9 +10,7 @@ import torch
 import torchvision
 
 from . import _template_remap as remap
-
 importlib.reload(remap)
-
 
 class TemplateCost(object):
     def __init__(self, weights=[0.3, 0.4, 0.1, 0.2]):

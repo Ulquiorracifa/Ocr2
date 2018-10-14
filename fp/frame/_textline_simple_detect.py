@@ -4,20 +4,17 @@ import numpy as np
 import cv2
 
 from ..core import thresh
-
 importlib.reload(thresh)
 
 
 def _in_range(x, x0, x1):
     return x0 <= x <= x1
 
-
 def make_rects_mask(mask_shape, rects):
     image = np.zeros(mask_shape, np.uint8)
     for x, y, w, h in rects:
         image[y: y + h, x: x + w] = 255
     return image
-
 
 class TextlineSimpleDetect(object):
     '''Simple Textline Detector Based on Connected Component'''
@@ -83,7 +80,7 @@ class TextlineSimpleDetect(object):
         x, y, w, h = rect
         cw0, cw1, ch0, ch1 = self.char_size_range
         # new_x = int(x - round(w * self.char_expand_ratio / 2))
-        # new_w = int(w + round(w * self.char_expand_ratio))
+        #new_w = int(w + round(w * self.char_expand_ratio))
         s = int(max(w, h) * 0.5 + 0.5 * (cw0 + cw1) / 2)
         new_x = int(x - round(s * self.char_expand_ratio / 2))
         new_w = int(w + round(s * self.char_expand_ratio))

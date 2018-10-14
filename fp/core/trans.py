@@ -18,7 +18,6 @@ def warp(src_image, src_points, dsize, border_color=(255, 255, 255)):
     img = cv2.warpPerspective(src_image, trans_mat, dsize, borderValue=border_color)
     return img
 
-
 class Trans(object):
     def __init__(self):
         pass
@@ -30,7 +29,6 @@ class Trans(object):
 def rotate180(image):
     '''rotate the image in 180 degrees, used when the image is upside down'''
     return np.fliplr(np.flipud(image))
-
 
 def rotate90(image):
     return np.rot90(image, k=1, axes=(0, 1))

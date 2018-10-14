@@ -7,9 +7,7 @@ import sklearn.cluster
 # import fp.util.io
 # importlib.reload(fp.util.io)
 import fp.core.line
-
 importlib.reload(fp.core.line)
-
 
 class LineSegDetect(object):
     def __init__(self):
@@ -17,7 +15,7 @@ class LineSegDetect(object):
 
     def __call__(self, image):
         # detect lines
-        lines, width, prec, nfa = self.lsd.detect(image)
+        lines, width, prec, nfa = self.lsd.detect(image)  
         lines = np.squeeze(lines)
 
         # keep long lines
@@ -27,7 +25,6 @@ class LineSegDetect(object):
         linex = filter(keep_long_line, lines)
         linex = np.array(list(linex))
         return linex
-
 
 class CornerPointDetect(object):
     def __init__(self):
@@ -67,7 +64,7 @@ class CornerPointDetect(object):
 
 def find_rects(points):
     points = np.array(points)
-    # assert isinstance(points, np.ndarray)
+    #assert isinstance(points, np.ndarray)
     ys = [p[1] for p in points]
     ys = np.array(ys).reshape(-1, 1)
     _, labels = sklearn.cluster.dbscan(ys, eps=6., min_samples=1)
@@ -79,7 +76,7 @@ def find_rects(points):
     _points.sort(key=lambda p: p[0][1])
     for i in range(len(_points)):
         _points[i] = sorted(list(_points[i]), key=lambda p: p[0])
-
+        
     bars = []
     for y in range(num_rows - 1):
         row_bars = []
@@ -93,12 +90,12 @@ def find_rects(points):
 
     l_bar = np.median([(bars[i][0][0] + bars[i][0][2]) / 2 for i in range(len(bars))])
     r_bar = np.median([(bars[i][-1][0] + bars[i][-1][2]) / 2 for i in range(len(bars))])
-
+                    
     rect_frame = []
     for y in range(num_rows - 1):
-        # if abs((bars[y][0][0] + bars[y][0][2]) /2 - l_bar) > 8:
+        #if abs((bars[y][0][0] + bars[y][0][2]) /2 - l_bar) > 8:
         #    bars[y].insert((
-        rects = []
+        rects = []             
         for i in range(len(bars[y]) - 1):
             x0, y0, x1, y1 = bars[y][i]
             x2, y2, x3, y3 = bars[y][i + 1]
@@ -121,10 +118,9 @@ class Detect(object):
         lines = self.detect_lines(image)
         points, lineids = self.detect_corners(lines)
 
-        rects = find_rects(points)
-        return points, rects
-
-
+        # rects = find_rects(points)
+        return points  #, rects
+    
 def visualize(image, points):
     imx = cv2.merge((image, image, image))
     for x, y in points:

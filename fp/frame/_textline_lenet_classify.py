@@ -8,11 +8,9 @@ import torch
 import torchvision
 
 from ..model import lenet
-
 importlib.reload(lenet)
 
 import fp.config
-
 
 def sampling(image, rect):
     rx, ry, w, h = rect
@@ -31,12 +29,11 @@ def sampling(image, rect):
     sub_im = np.expand_dims(sub_im, axis=0)
     return sub_im
 
-
 class TextlineLenetClassify(object):
     def __init__(self, weight_file=fp.config.TEXTLINE_CLASSIFY_LENET_WEIGHT):
         '''
         '''
-        if fp.config.USE_CUDA and torch.cuda.is_available():
+        if fp.config.TEXTLINE_CLASSIFY_CUDA and torch.cuda.is_available():
             self.device = torch.device('cuda')
             _state_dict = torch.load(weight_file, map_location='cuda')
         else:

@@ -6,54 +6,43 @@ import torch
 import torchvision
 
 from . import _template_match
-
 importlib.reload(_template_match)
 from ._template_match import TemplateMatch
 
 from . import _template_associate
-
 importlib.reload(_template_associate)
 from ._template_associate import TemplateAssociate
 
 from . import _template_gauss_associate
-
 importlib.reload(_template_gauss_associate)
 from ._template_gauss_associate import TemplateAssociate_v2
 
 from . import _template_cost
-
 importlib.reload(_template_cost)
 from ._template_cost import TemplateCost
 
 from . import _template_warp
-
 importlib.reload(_template_warp)
 from ._template_warp import Warp
 
 from . import _template_remap
-
 importlib.reload(_template_remap)
 from ._template_remap import ReMap, align_code
 
 from ..model import pascal_voc
-
 importlib.reload(pascal_voc)
 
 from . import template_data
-
 importlib.reload(template_data)
 from .template_data import TemplateData
 
 from ..util import check
-
 importlib.reload(check)
-
 
 def named_rects_from_xml(xmlfile):
     '''use pascal voc as named rects'''
     objects = pascal_voc.parse_xml(xmlfile)['objects']
     return {item['name']: item['bndbox'] for item in objects}
-
 
 def anchors_candidates(rects, image_size):
     x, y = rects[:, 0], rects[:, 1]
@@ -74,7 +63,6 @@ class Template(object):
     '''
     template is represented by anchors
     '''
-
     def __init__(self, init_yaml=None,
                  warp_method='translate',
                  learning_rate=0.01, max_iters=3000, debug=False):
@@ -111,7 +99,7 @@ class Template(object):
         para_final, warped_anchors = self.match(self.data.anchors_mean,
                                                 self.data.center_mean,
                                                 aligns,
-                                                detected_candidates,
+                                                detected_candidates, 
                                                 para_init)
 
         if self.debug is not None:
