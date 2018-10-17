@@ -16,7 +16,7 @@ import json
 
 def newMubanDetect(filepath):
     # pars = dict(textline_method='textboxes')  # 使用 深度学习 方法，目前用的CPU，较慢 ?
-    pars = dict(textline_method='textboxes')  # 使用 深度学习 方法，目前用的CPU，较慢 ?
+    pars = dict(textline_method='simple')  # 使用 深度学习 方法，目前用的CPU，较慢 ?
     pipe = fp.vat_invoice.pipeline.VatInvoicePipeline('special', pars=pars, debug=False)  # 请用debug=False
     # pipe = fp.vat_invoice.pipeline.VatInvoicePipeline('special', debug=False) # 请用False
     im = cv2.imread(filepath, 1)
@@ -39,7 +39,7 @@ def newMubanDetect(filepath):
         attributeLine[c][2] = 2 * attributeLine[c][2]
         attributeLine[c][3] = 2 * attributeLine[c][3]
     print(attributeLine)
-    jsonResult = flow.cropToOcr(filepath, attributeLine, 11, debug=False)  # ocr和分词
+    jsonResult = flow.cropToOcr(filepath, attributeLine, 11, debug=True)  # ocr和分词
     print(jsonResult)
 
     return jsonResult
@@ -325,7 +325,7 @@ def init(filepath):
     useQrcodeScan = False
 
     if useQrcodeScan:
-        '''res = scanQRc(filepath)
+        res = scanQRc(filepath)
         if res[0] != '':
             resArray = getArrayFromStr(res[0])
             js = InterfaceType.JsonInterface.invoice()
@@ -335,7 +335,7 @@ def init(filepath):
             print(jsoni)
             return json.dumps(jsoni).encode().decode("unicode-escape")
         else:
-            return mubanDetect(filepath)'''
+            return mubanDetect(filepath)
     else:
         # print('newMubanD')
         return newMubanDetect(filepath)
@@ -353,4 +353,5 @@ def init(filepath):
 jpgs = fp.util.path.files_in_dir(dset_dir, '.png')
 print(jpgs[9])
 '''
-# init('Image_00010.jpg')
+if __name__ == '__main__':
+    init('Image_00010.jpg')

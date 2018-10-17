@@ -60,6 +60,13 @@ def named_rects(image, named_rects, image_shape=None):
     return image
 
 
+def points(image, points, image_shape=None, radius=1):
+    image = _make_canvas(image, image_shape)
+    for x, y in points:
+        x, y = int(x), int(y)
+        cv2.circle(image, (x, y), radius, (255, 0, 0), -1)
+    return image
+
 def roi_cut(image, roi):
     x, y, w, h = roi
     return image[y:y + h, x:x + w]
@@ -73,7 +80,6 @@ def fixed_color_array(n):
         b = np.random.randint(256)
         color_array.append([r, g, b])
     return color_array
-
 
 def batch_display(images, fig_size, cols=2, cmap=None):
     n = len(images)
@@ -104,7 +110,7 @@ class FolderDisplay(object):
 
     def __init__(self, folder, fig_size=(16, 16), cols=2, cmap=None):
         self.image_paths = path.files_in_dir(folder,
-                                             exts=self.IMAGEFILE_EXTS,
+                                             exts=self.IMAGEFILE_EXTS, 
                                              include_dir=True)
         self.fig_size = fig_size
         self.cols = cols
