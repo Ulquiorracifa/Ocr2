@@ -58,6 +58,10 @@ class posteriorCrt():
         for c in dict:
             self.dic[c] = dict[c]
 
+    def setVATParaFromVATDict(self, VATdict):
+        for c in VATdict:
+            self.VATdict[c] = VATdict[c]
+
     def startTrainTicketCrt(self):
 
         # 去除起点终点的除汉字外的词  :需要分词 ∴都是汉字
@@ -281,7 +285,7 @@ class posteriorCrt():
             if len(digitStr) > 2:
                 self.VATdic['invoiceAmount'] = '¥' + digitStr[:2] + '.' + digitStr[-2:]
             else:
-                print('总金额解析错误！')
+                print('不含税金额解析错误！')
 
         # 发票代码
         if len(self.VATdic['invoiceCode']) > 10:

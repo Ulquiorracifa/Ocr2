@@ -765,10 +765,11 @@ def cropToOcr(filePath, recT, typeT, debug=False):
         sp.save(sFPN)
 
         if debug == False:
-            if (x != 'invoiceNo'):
-                midResult = OcrPic(sFPN)
-            else:
-                midResult = OcrNoPic(sFPN)
+            # if (x != 'invoiceNo'):
+            # # 测试如此识别并不能修正字体不能识别的问题
+            midResult = OcrPic(sFPN)
+            # else:
+            #     midResult = OcrNoPic(sFPN)
 
             print(midResult)
             ocrResult[x] = midResult
