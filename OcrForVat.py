@@ -9,14 +9,14 @@ import flow
 import lineToAttribute.getAtbt
 import copy
 import muban
-# from scanQRCode.scan_qrcode import recog_qrcode, recog_qrcode_ex
+from scanQRCode.scan_qrcode import recog_qrcode, recog_qrcode_ex
 import InterfaceType
 import json
 
 
 def newMubanDetect(filepath):
     # pars = dict(textline_method='textboxes')  # 使用 深度学习 方法，目前用的CPU，较慢 ?
-    pars = dict(textline_method='simple')  # 使用 深度学习 方法，目前用的CPU，较慢 ?
+    pars = dict(textline_method='textboxes')  # 使用 深度学习 方法，目前用的CPU，较慢 ?
     pipe = fp.vat_invoice.pipeline.VatInvoicePipeline('special', pars=pars, debug=False)  # 请用debug=False
     # pipe = fp.vat_invoice.pipeline.VatInvoicePipeline('special', debug=False) # 请用False
     im = cv2.imread(filepath, 1)
@@ -31,7 +31,7 @@ def newMubanDetect(filepath):
         'invoiceCode': list(pipe.predict('type')),
         'invoiceNo': list(pipe.predict('serial')),
         'invoiceDate': list(pipe.predict('time')),
-        'totalAmount': list(pipe.predict('tax_free_money'))
+        'invoiceAmount': list(pipe.predict('tax_free_money'))
     }
     for c in attributeLine:
         attributeLine[c][0] = 2 * attributeLine[c][0]
@@ -39,7 +39,7 @@ def newMubanDetect(filepath):
         attributeLine[c][2] = 2 * attributeLine[c][2]
         attributeLine[c][3] = 2 * attributeLine[c][3]
     print(attributeLine)
-    jsonResult = flow.cropToOcr(filepath, attributeLine, 11, debug=True)  # ocr和分词
+    jsonResult = flow.cropToOcr(filepath, attributeLine, 11, debug=False)  # ocr和分词
     print(jsonResult)
 
     return jsonResult
@@ -171,7 +171,7 @@ def mubanDetect(filepath):
 
 
 def textline(filepath):
-    show_textline = True
+    show_textline = False
     # --- 初始化 ---
     # 读取文件夹下图片
     # dset_dir = 'E:/DevelopT/pycharm_workspace/Ocr/pic'

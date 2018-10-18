@@ -777,9 +777,9 @@ def cropToOcr(filePath, recT, typeT, debug=False):
     print(ocrResult)
     pC = SemanticCorrect.posteriorCrt.posteriorCrt()
 
-    if typeT == 11:
+    if typeT == 11 and debug == False:
         import OcrForVat
-        if ocrResult['invoiceDate'][:4] == '开票日期' or len(ocrResult['invoiceDate']) < 4 and debug == False:
+        if ocrResult['invoiceDate'][:4] == '开票日期' or len(ocrResult['invoiceDate']) < 4:
             recT['invoiceDate'] = OcrForVat.mubanDetectInvoiceDate(filePath)['invoiceDate']
             sp = img.crop((recT['invoiceDate'][0], recT['invoiceDate'][1],
                            recT['invoiceDate'][0] + recT['invoiceDate'][2],
@@ -790,18 +790,18 @@ def cropToOcr(filePath, recT, typeT, debug=False):
                        1] + "/" + jwkj_get_filePath_fileName_fileExt(filePath)[
                        1] + "_" + 'invoiceDateFix' + ".jpg"
             sp.save(sFPN)
-            if debug == False:
-                midResult = OcrPic(sFPN)
 
-                print('invoiceDateFix: ' + midResult)
-                ocrResult['invoiceDate'] = midResult
+            midResult = OcrPic(sFPN)
+
+            print('invoiceDateFix: ' + midResult)
+            ocrResult['invoiceDate'] = midResult
 
     js = InterfaceType.JsonInterface.invoice()
     if typeT == 11:
         pC.setVATParaFromVATDict(ocrResult)
         pC.startVATCrt()
         js.setValueWithDict(pC.VATdic)
-        jsoni = js.VATdic
+        jsoni = js.dic
 
     else:
         pC.setTrainTicketParaFromDict(ocrResult)

@@ -60,7 +60,7 @@ class posteriorCrt():
 
     def setVATParaFromVATDict(self, VATdict):
         for c in VATdict:
-            self.VATdict[c] = VATdict[c]
+            self.VATdic[c] = VATdict[c]
 
     def startTrainTicketCrt(self):
 
@@ -263,7 +263,7 @@ class posteriorCrt():
 
         # 检测总金额
         # 先取数字串，再格式
-        if self.VATdic['totalAmount'] != '':
+        if self.VATdic['totalAmount'] != '' and self.VATdic['totalAmount'].find('.', 0) < 0:
             digitStr = ''
             for c in self.VATdic['totalAmount']:
                 if c.isdigit():
@@ -276,7 +276,7 @@ class posteriorCrt():
 
         # 检测不含税金额
         # 先取数字串，再格式
-        if self.VATdic['invoiceAmount'] != '':
+        if self.VATdic['invoiceAmount'] != '' and self.VATdic['invoiceAmount'].find('.', 0) < 0:
             digitStr = ''
             for c in self.VATdic['invoiceAmount']:
                 if c.isdigit():
@@ -288,12 +288,23 @@ class posteriorCrt():
                 print('不含税金额解析错误！')
 
         # 发票代码
-        if len(self.VATdic['invoiceCode']) > 10:
-            self.VATdic['invoiceCode'] = self.VATdic['invoiceCode'][:10]
+        digitStrCode = ''
+        for c in self.VATdic['invoiceCode']:
+            if c.isdigit():
+                digitStrCode += c
+
+        if len(digitStrCode) > 10:
+            self.VATdic['invoiceCode'] = digitStrCode[:10]
 
         # 发票号码
-        if len(self.VATdic['invoiceNo']) > 8:
-            self.VATdic['invoiceNo'] = self.VATdic['invoiceNo'][-8:]
+        # 修正误识汉字
+        digitStrNo = ''
+        for c in self.VATdic['invoiceNo']:
+            if c.isdigit():
+                digitStrNo += c
+
+        if len(digitStrNo) > 8:
+            self.VATdic['invoiceNo'] = digitStrNo[-8:]
 
 
 
