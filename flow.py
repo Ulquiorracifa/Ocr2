@@ -14,6 +14,7 @@ import FindCircle
 import InterfaceType.JsonInterface
 import SemanticCorrect.posteriorCrt
 ##aip
+import OCR.OCR as ocr
 
 from aip import AipOcr
 import json
@@ -745,7 +746,7 @@ def DetectRedTrainTicket(box, filePath):
     return json.dumps(jsoni).encode().decode("unicode-escape")
 
 
-def cropToOcr(filePath, recT, typeT, debug=False):
+def cropToOcr(filePath, recT, typeT, debug=False, isusebaidu=False):
     ocrResult = {}
     img = Image.open(filePath)
 
@@ -755,6 +756,9 @@ def cropToOcr(filePath, recT, typeT, debug=False):
         os.mkdir(
             jwkj_get_filePath_fileName_fileExt(filePath)[0] + "tmp/" + jwkj_get_filePath_fileName_fileExt(filePath)[
                 1])
+
+    # 加载自识别ocr模型（增值税专票模型）可设置typeT为11加载
+    model = ocr.load_model()
 
     for x in recT:
         sp = img.crop((recT[x][0], recT[x][1], recT[x][0] + recT[x][2], recT[x][1] + recT[x][3]))
@@ -767,11 +771,14 @@ def cropToOcr(filePath, recT, typeT, debug=False):
         if debug == False:
             # if (x != 'invoiceNo'):
             # # 测试如此识别并不能修正字体不能识别的问题
-            midResult = OcrPic(sFPN)
+            if isusebaidu:
+                midResult = OcrPic(sFPN)
+            else:
+                midResult = newOcr(sFPN, model)
             # else:
             #     midResult = OcrNoPic(sFPN)
 
-            print(midResult)
+            print(midResult + '   isUseBaidu: ' + isusebaidu)
             ocrResult[x] = midResult
 
     print(ocrResult)
@@ -840,6 +847,11 @@ def detect(filePath, recT, type):
 
     else:
         print("Can't open file " + filePath)
+
+
+def newOcr(filepath, model):
+    ocr.OCR(filepath, base_model=model)
+
 
 
 def __init__():

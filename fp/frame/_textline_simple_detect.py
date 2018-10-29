@@ -68,10 +68,11 @@ class TextlineSimpleDetect(object):
         #    self.debug['textline_rects0'] = np.array(list(textline_rects))
         textline_rects = filter(self._is_textline, textline_rects)
         textline_rects = map(self._shrink_textline_rect, textline_rects)
-        textline_rects = np.array(list(textline_rects))
+        textline_rects = np.array(list(textline_rects), dtype=np.float32)
         if self.std_image_size is not None:
             textline_rects[:, 0::2] *= inv_fx
             textline_rects[:, 1::2] *= inv_fy
+            textline_rects = np.round(textline_rects).astype(np.int64)
         if self.debug is not None:
             self.debug['textline_rects'] = textline_rects
         return textline_rects
@@ -79,7 +80,7 @@ class TextlineSimpleDetect(object):
     def _expand_char_rect(self, rect):
         x, y, w, h = rect
         cw0, cw1, ch0, ch1 = self.char_size_range
-        # new_x = int(x - round(w * self.char_expand_ratio / 2))
+        #new_x = int(x - round(w * self.char_expand_ratio / 2))
         #new_w = int(w + round(w * self.char_expand_ratio))
         s = int(max(w, h) * 0.5 + 0.5 * (cw0 + cw1) / 2)
         new_x = int(x - round(s * self.char_expand_ratio / 2))

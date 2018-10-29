@@ -78,6 +78,8 @@ def _local_threshold(gray_image, rcts):
 
 
 def rects_adjust(im, rcts):
+    if im.dtype != np.uint8:
+        im = im.astype(np.uint8)
     if im.shape[2] != 1:
         gray_image = cv2.cvtColor(im, cv2.COLOR_BGR2GRAY)
     else:
@@ -131,7 +133,7 @@ if __name__ == "__main__":
         image_path = '/home/gaolin/TextBoxes/data/train_ticket'
 
     im_names = glob.glob(os.path.join(image_path, "*.jpg"))
-
+	
     for im_name in im_names: 	
         print(im_name)
         cvs_file_tbx = im_name.replace('.jpg', '_tb.csv')

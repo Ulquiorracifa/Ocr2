@@ -1,3 +1,5 @@
+import OCR.OCR as ocr
+from PIL import Image
 import xmlToDict
 import cv2
 import Detect
@@ -12,12 +14,102 @@ import muban
 from scanQRCode.scan_qrcode import recog_qrcode, recog_qrcode_ex
 import InterfaceType
 import json
+import os
+import SemanticCorrect.posteriorCrt
 
 
-def newMubanDetect(filepath):
+def jwkj_get_filePath_fileName_fileExt(filename):  # 提取路径
+    (filepath, tempfilename) = os.path.split(filename)
+    (shotname, extension) = os.path.splitext(tempfilename)
+    return filepath, shotname, extension
+
+
+def newOcr(filepath, model):
+    return ocr.OCR(filepath, base_model=model)
+
+
+def CropPic(filePath, recT, typeT, debug=False, isusebaidu=False):
+    ocrResult = {}
+    img = Image.open(filePath)
+
+    if os.path.exists(
+            jwkj_get_filePath_fileName_fileExt(filePath)[0] + "tmp/" + jwkj_get_filePath_fileName_fileExt(filePath)[
+                1]) == False:
+        os.mkdir(
+            jwkj_get_filePath_fileName_fileExt(filePath)[0] + "tmp/" + jwkj_get_filePath_fileName_fileExt(filePath)[
+                1])
+
+    # 加载自识别ocr模型（增值税专票模型）可设置typeT为11加载
+    model = ocr.load_model()
+
+    for x in recT:
+        sp = img.crop((recT[x][0], recT[x][1], recT[x][0] + recT[x][2], recT[x][1] + recT[x][3]))
+
+        sFPN = jwkj_get_filePath_fileName_fileExt(filePath)[0] + "tmp/" + \
+               jwkj_get_filePath_fileName_fileExt(filePath)[
+                   1] + "/" + jwkj_get_filePath_fileName_fileExt(filePath)[
+                   1] + "_" + x + ".jpg"
+        sp.save(sFPN)
+
+        if debug == False:
+            # if (x != 'invoiceNo'):
+            # # 测试如此识别并不能修正字体不能识别的问题
+            if isusebaidu:
+                midResult = flow.OcrPic(sFPN)
+            else:
+                midResult = newOcr(sFPN, model)
+            # else:
+            #     midResult = OcrNoPic(sFPN)
+
+            print(midResult + '   isUseBaidu: ' + str(isusebaidu))
+            ocrResult[x] = midResult
+
+    print(ocrResult)
+    pC = SemanticCorrect.posteriorCrt.posteriorCrt()
+
+    if typeT == 11 and debug == False:
+        import OcrForVat
+        if ocrResult['invoiceDate'][:4] == '开票日期' or len(ocrResult['invoiceDate']) < 4:
+            recT['invoiceDate'] = OcrForVat.mubanDetectInvoiceDate(filePath)['invoiceDate']
+            sp = img.crop((recT['invoiceDate'][0], recT['invoiceDate'][1],
+                           recT['invoiceDate'][0] + recT['invoiceDate'][2],
+                           recT['invoiceDate'][1] + recT['invoiceDate'][3]))
+
+            sFPN = jwkj_get_filePath_fileName_fileExt(filePath)[0] + "tmp/" + \
+                   jwkj_get_filePath_fileName_fileExt(filePath)[
+                       1] + "/" + jwkj_get_filePath_fileName_fileExt(filePath)[
+                       1] + "_" + 'invoiceDateFix' + ".jpg"
+            sp.save(sFPN)
+
+            midResult = flow.OcrPic(sFPN)
+
+            print('invoiceDateFix: ' + midResult)
+            ocrResult['invoiceDate'] = midResult
+
+    js = InterfaceType.JsonInterface.invoice()
+    if typeT == 11:
+        pC.setVATParaFromVATDict(ocrResult)
+        pC.startVATCrt()
+        js.setValueWithDict(pC.VATdic)
+        jsoni = js.dic
+
+    else:
+        pC.setTrainTicketParaFromDict(ocrResult)
+        pC.startTrainTicketCrt()
+        js.setValueWithDict(pC.dic)
+        jsoni = js.dic
+
+    return json.dumps(jsoni).encode().decode("unicode-escape")
+
+
+def newMubanDetect(filepath, type='special', pars=dict(textline_method='simple')):
+    # 'elec'：增值税电子发票
+    # 'special'：增值税专用发票
+    # 'normal'：增值税普通发票
     # pars = dict(textline_method='textboxes')  # 使用 深度学习 方法，目前用的CPU，较慢 ?
-    pars = dict(textline_method='textboxes')  # 使用 深度学习 方法，目前用的CPU，较慢 ?
-    pipe = fp.vat_invoice.pipeline.VatInvoicePipeline('special', pars=pars, debug=False)  # 请用debug=False
+    # pars = dict(textline_method='simple')  # 使用 深度学习 方法，目前用的CPU，较慢 ?
+
+    pipe = fp.vat_invoice.pipeline.VatInvoicePipeline(type, pars=pars, debug=False)  # 请用debug=False
     # pipe = fp.vat_invoice.pipeline.VatInvoicePipeline('special', debug=False) # 请用False
     im = cv2.imread(filepath, 1)
     im = cv2.resize(im, None, fx=0.5, fy=0.5)
@@ -27,19 +119,39 @@ def newMubanDetect(filepath):
     # pl.figure(figsize=(12, 12))
     # pl.imshow(pipe.debug['result'])
     # pl.show()
-    attributeLine = {
-        'invoiceCode': list(pipe.predict('type')),
-        'invoiceNo': list(pipe.predict('serial')),
-        'invoiceDate': list(pipe.predict('time')),
-        'invoiceAmount': list(pipe.predict('tax_free_money'))
-    }
+    attributeLine = {}
+
+    if type == 'special' or type == 'normal':
+        attributeLine = {
+            'invoiceCode': list(pipe.predict('type')),
+            'invoiceNo': list(pipe.predict('serial')),
+            'invoiceDate': list(pipe.predict('time')),
+            'invoiceAmount': list(pipe.predict('tax_free_money'))
+        }
+    elif type == 'elec':
+        attributeLine = {
+            'invoiceCode': list(pipe.predict('type')),
+            'invoiceNo': list(pipe.predict('serial')),
+            'invoiceDate': list(pipe.predict('time')),
+            'invoiceAmount': list(pipe.predict('tax_free_money')),
+            'verifyCode': list(pipe.predict('verify'))
+        }
+    else:
+        print('type input error !')
+
+
     for c in attributeLine:
-        attributeLine[c][0] = 2 * attributeLine[c][0]
-        attributeLine[c][1] = 2 * attributeLine[c][1]
-        attributeLine[c][2] = 2 * attributeLine[c][2]
-        attributeLine[c][3] = 2 * attributeLine[c][3]
+        attributeLine[c][0] = 2 * attributeLine[c][0] - 0.1 * 2 * attributeLine[c][2]
+        attributeLine[c][1] = 2 * attributeLine[c][1] - 0.02 * 2 * attributeLine[c][3]
+        attributeLine[c][2] = 2 * attributeLine[c][2] * 1.2
+        attributeLine[c][3] = 2 * attributeLine[c][3] * 1.04
+        if attributeLine[c][0] < 0:
+            attributeLine[c][0] = 0
+        if attributeLine[c][1] < 0:
+            attributeLine[c][1] = 0
+
     print(attributeLine)
-    jsonResult = flow.cropToOcr(filepath, attributeLine, 11, debug=False)  # ocr和分词
+    jsonResult = CropPic(filepath, attributeLine, 11, debug=False, isusebaidu=False)  # ocr和分词
     print(jsonResult)
 
     return jsonResult
@@ -165,7 +277,7 @@ def mubanDetect(filepath):
     # print(attributeLine)
     # print(type(attributeLine))
     # print(attributeLine['departCity'])
-    jsonResult = flow.cropToOcr(midProcessResult[0], attributeLine, midProcessResult[1])  # ocr和分词
+    jsonResult = flow.cropToOcr(midProcessResult[0], attributeLine, midProcessResult[1], isusebaidu=False)  # ocr和分词
     print(jsonResult)
     return jsonResult
 
@@ -335,7 +447,7 @@ def init(filepath):
             print(jsoni)
             return json.dumps(jsoni).encode().decode("unicode-escape")
         else:
-            return mubanDetect(filepath)
+            return newMubanDetect(filepath)
     else:
         # print('newMubanD')
         return newMubanDetect(filepath)
@@ -353,5 +465,8 @@ def init(filepath):
 jpgs = fp.util.path.files_in_dir(dset_dir, '.png')
 print(jpgs[9])
 '''
+
 if __name__ == '__main__':
-    init('Image_00010.jpg')
+    init('Image_00002.jpg', type='special', pars=dict(textline_method='simple'))
+    init('Image_00164.jpg', type='normal', pars=dict(textline_method='simple'))
+    init('Image_00131.jpg', type='elec', pars=dict(textline_method='simple'))
