@@ -6,8 +6,9 @@ from ..core import quad
 importlib.reload(quad)
 from ..core import trans
 importlib.reload(trans)
-from ..core import line
-importlib.reload(line)
+from ..core import lineseg
+
+importlib.reload(lineseg)
 
 from . import _surface_check
 importlib.reload(_surface_check)
@@ -25,7 +26,7 @@ class Find(object):
     def __call__(self, mask):
         # quads, conts = quad.find_quads(mask, approx_ratio=self.approx_ratio,
         #                               min_area=self.min_area)
-        _, contours, _ = cv2.findContours(mask.copy(), mode=cv2.RETR_EXTERNAL,
+        _, contours, _ = cv2.findContours(mask.copy(), mode=cv2.RETR_EXTERNAL, 
                                           method=cv2.CHAIN_APPROX_SIMPLE)
         quads = []
         conts = []
@@ -94,14 +95,14 @@ class Adjust(object):
         lines1 = self._detect_region(im[-40:, :])
         lines = np.concatenate((lines0, lines1))
 
-        max_line_len = np.max(list(map(line.line_length, lines)))
+        max_line_len = np.max(list(map(lineseg.line_length, lines)))
         ref_size = np.min(std_im.shape[:2])
         if max_line_len < self.line_length_ratio * ref_size:
             return std_im
         line_lens_th = max_line_len * self.th_ratio
-        strong_lines = list(filter(lambda x: line.line_length(x) > line_lens_th, lines))
-        line_angs = np.array(list(map(line.line_angle, strong_lines)))
-        line_lens = np.array(list(map(line.line_length, strong_lines)))
+        strong_lines = list(filter(lambda x: lineseg.line_length(x) > line_lens_th, lines))
+        line_angs = np.array(list(map(lineseg.line_angle, strong_lines)))
+        line_lens = np.array(list(map(lineseg.line_length, strong_lines)))
         ang = np.sum(line_angs * line_lens) / np.sum(line_lens)
         h, w = std_im.shape[:2]
         im_ft = trans.rotate_crop(std_im, center=(w / 2, h / 2), angle=ang, dsize=(w, h),

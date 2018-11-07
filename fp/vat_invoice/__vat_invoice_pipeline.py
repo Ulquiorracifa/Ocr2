@@ -3,14 +3,11 @@ import numpy as np
 import cv2
 
 from ..core import rectangle, trans
-
 importlib.reload(rectangle)
 importlib.reload(trans)
 from ..util import check
-
 importlib.reload(check)
 from ..util import visualize
-
 importlib.reload(visualize)
 
 def relative_to_rect(relative_ratio, general_rect):
@@ -24,13 +21,13 @@ def relative_to_rect(relative_ratio, general_rect):
 
 class _VatInvoicePipeline(object):
     def __init__(self, detect_textlines, classify_textlines,
-                 detect_wireframe, deskew_wireframe, match_wireframe,
+                 detect_wireframe, extract_surface, match_wireframe,
                  predict_pars,
                  debug=False):
         self.detect_textlines = detect_textlines
         self.classify_textlines = classify_textlines
         self.detect_wireframe = detect_wireframe
-        self.deskew_wireframe = deskew_wireframe
+        self.extract_surface = extract_surface
         self.match_wireframe = match_wireframe
         self.predict_pars = predict_pars
         self.reset()
@@ -48,29 +45,42 @@ class _VatInvoicePipeline(object):
         # deskew
         #########
         assert self.detect_wireframe is not None
-        assert self.deskew_wireframe is not None
+        assert self.extract_surface is not None
         assert self.match_wireframe is not None
 
+        if self.debug is not None:
+            print('[1/5]\nDetect surface box... ')
+        
         _, wireframe_box, _ = self.detect_wireframe(gray_image)
         center, (size0, size1), angle = wireframe_box
-        # if wireframe_box[2] < -45.:
-        #    wireframe_box[2] += 90.
-        #    wireframe_box[1] = size1, size0
         if size0 < size1:
             wireframe_box = center, (size1, size0), angle + 90.
         if self.debug is not None:
             self.debug['wireframe_box'] = wireframe_box
             self.debug['wireframe_box_show'] = visualize.box(image, wireframe_box)
-        surface_points = self.deskew_wireframe(wireframe_box)
-        # print(surface_points)
-        surface_image = trans.deskew(image, surface_points)
+            print('Done.')
+            print('* wirframe_box:')
+            print('  (({:.2f}, {:.2f}), ({:.2f}, {:.2f}), {:.2f}) '.format(center[0],
+                                                                           center[1],
+                                                                           wireframe_box[1][0],
+                                                                           wireframe_box[1][1],
+                                                                           wireframe_box[2]))
+            print('[2/5]\nExtract surface image... ')
+
+        surface_points, surface_image = self.extract_surface(image, wireframe_box)
         gray_surface_image = cv2.cvtColor(surface_image, cv2.COLOR_BGR2GRAY)
         image_size = surface_image.shape[1], surface_image.shape[0]
         self.wireframe_box = wireframe_box
         self.surface_image = surface_image
 
+        if self.debug is not None:
+            print('Done.')
+            print('* surface_points:\n', surface_points)
+            print('* surface_image.shape: ', surface_image.shape)
+            print('[3/5]\nDetect wirframe...')
         # get rois
         frame_points, _, init_rectr = self.detect_wireframe(gray_surface_image)
+        # print('finish detect points')
         frame_points = np.array(frame_points, dtype=np.float32)
         rectr = self.match_wireframe(frame_points, image_size, init_rectr)
         W, H = image_size
@@ -87,8 +97,14 @@ class _VatInvoicePipeline(object):
         ############
         # TEXTLINES
         ############
+        if self.debug is not None:
+            print('Done.')
+            print('[4/5]\nDetect textlines...')
+            
         if self.detect_textlines is None:
             self.exit_msg = 'Null textlines detector'
+            if self.debug is not None:
+                print(self.exit_msg)
             return False
 
         if self.detect_textlines.method == 'simple':
@@ -104,10 +120,16 @@ class _VatInvoicePipeline(object):
         assert check.valid_rects(detected_rects, strict=True)
         #for rect_ in detected_rects:
         #    assert rect_[2] > 0 and rect_[3] > 0
-        self.textlines = detected_rects
+        self.textlines = np.array(detected_rects)
 
+        if self.debug is not None:
+            print('Done.')
+            print('[5/5]\nClassify textlines...')
+        
         if self.classify_textlines is None:
             self.exit_msg = 'Null textlines classifier.'
+            if self.debug is not None:
+                print(self.exit_msg)
             return False
         detected_types = self.classify_textlines(gray_surface_image, 
                                                  detected_rects)
@@ -115,7 +137,10 @@ class _VatInvoicePipeline(object):
 
         if self.debug is not None:
             self.debug['result'] = self._draw_result(surface_image)
+            print('Done. END.')
 
+        return True
+        
     def reset(self):
         self.textlines = None
         self.textlines_type = None
@@ -213,7 +238,7 @@ class _VatInvoicePipeline(object):
 
         keys = {'special': ['type', 'serial', 'title', 'time', 'tax_free_money'],
                 'normal': ['type', 'serial', 'title', 'time', 'tax_free_money', 'verify'],
-                'elec': ['type', 'serial', 'title', 'time', 'tax_free_money', 'verify'], }
+                'elec': ['type', 'serial', 'title', 'time', 'tax_free_money', 'verify'],}
         assert self.invoice_type is not None
         for key in keys[self.invoice_type]:
             _rect = self.predict(key)

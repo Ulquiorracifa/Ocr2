@@ -40,8 +40,8 @@ class TextBoxesDetect(_Detect):
     def __init__(self, \
                  model_def='models/fapiao.prototxt', \
                  model_weights='models/fapiao.caffemodel', \
-                 scales=((800, 800),),  # (700,1600),(1600,1600)),  \
-                 confidence_thres=0.6):  #
+                 scales=((900, 600), (1600, 1000), (1600, 1600)), \
+                 confidence_thres=0.4):  #
         self.model_def = model_def
         self.model_weights = model_weights
         print(self.model_def, self.model_weights)
@@ -94,7 +94,7 @@ class TextBoxesDetect(_Detect):
             det_xmin = detections[0, 0, :, 3]
             det_ymin = detections[0, 0, :, 4]
             det_xmax = detections[0, 0, :, 5]
-            det_ymax = detections[0, 0,:,6]
+            det_ymax = detections[0, 0, :,6]
             top_indices = [i for i, conf in enumerate(det_conf) if conf >= self.confidence_thres]
             top_conf = det_conf[top_indices]
             top_xmin = det_xmin[top_indices]

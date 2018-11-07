@@ -25,26 +25,63 @@ def _make_canvas(image, image_shape):
     raise NotImplemented
 
 
+def rand_color(seed=None):
+    '''generate pseudo random colors
+    Args:
+      seed int, if seed is set, use pseudo random color
+    '''
+    if seed is not None:
+        assert isinstance(seed, int)
+        np.random.seed(seed)
+    r = np.random.randint(256)
+    g = np.random.randint(256)
+    b = np.random.randint(256)
+    return (r, g, b)
+
+
+def rand_colors(n_color, seed=None):
+    '''generate pseudo random colors
+    Args:
+      n_color int
+      seed int
+    '''
+    if seed is not None:
+        assert isinstance(seed, int)
+        np.random.seed(seed)
+    colors = np.random.randint(256, size=(n_color, 3))
+    colors = tuple(colors.tolist())
+    return colors
+    
 def _point(point):
+    '''convert to int tuple point'''
     x, y = point
     return int(round(x)), int(round(y))
 
-def rects(image, rects, types=None, image_shape=None):
+
+def lines(image, linex, image_shape=None, color=(255, 0, 0), thickness=2):
+    image = _make_canvas(image, image_shape)
+    for x0, y0, x1, y1 in linex:
+        x0, y0, x1, y1 = int(x0), int(y0), int(x1), int(y1)
+        cv2.line(image, (x0, y0), (x1, y1), color, thickness=thickness)
+    return image
+
+
+def rects(image, rectx, types=None, image_shape=None, color=(255, 0, 0)):
     image = _make_canvas(image, image_shape)
     if types is None:
-        for x, y, w, h in rects:
+        for x, y, w, h in rectx:
             p0 = int(round(x)), int(round(y))
             p1 = int(round(x + w)), int(round(y + h))
-            cv2.rectangle(image, p0, p1, (255, 0, 0), thickness=2)
+            cv2.rectangle(image, p0, p1, color, thickness=2)
     else:
         n_color = np.max(types) + 1
         np.random.seed(5)
         colors = np.random.randint(256, size=(n_color, 3))
-        for (x, y, w, h), type_ in zip(rects, types):
-            color = tuple(colors[int(type_), :].tolist())  # Wired! must use .tolist()
+        for (x, y, w, h), type_ in zip(rectx, types):
+            _color = tuple(colors[int(type_), :].tolist())  # Wired! must use .tolist()
             p0 = int(round(x)), int(round(y))
             p1 = int(round(x + w)), int(round(y + h))
-            cv2.rectangle(image, p0, p1, color, thickness=2)
+            cv2.rectangle(image, p0, p1, _color, thickness=2)
     return image
 
 def named_rects(image, named_rects, image_shape=None):
@@ -63,21 +100,22 @@ def named_rects(image, named_rects, image_shape=None):
                     cv2.FONT_HERSHEY_SIMPLEX, 0.8, (155, 155, 155), 2, cv2.LINE_AA)
     return image
 
-def points(image, points, image_shape=None, radius=1):
+
+def points(image, pointx, image_shape=None, radius=1, color=(255, 0, 0)):
     image = _make_canvas(image, image_shape)
-    for x, y in points:
+    for x, y in pointx:
         x, y = int(x), int(y)
-        cv2.circle(image, (x, y), radius, (255, 0, 0), -1)
+        cv2.circle(image, (x, y), radius, color, -1)
     return image
 
 
-def box(image, box, image_shape=None):
+def box(image, boxx, image_shape=None, color=(255, 0, 0)):
     image = _make_canvas(image, image_shape)
-    points = cv2.boxPoints(box)
+    points = cv2.boxPoints(boxx)
     for i, (p0, p1) in enumerate(zip(points, np.roll(points, 2))):
         p0, p1 = _point(p0), _point(p1)
-        cv2.line(image, p0, p1, (255, 0, 0), 2)
-        cv2.circle(image, p0, (i + 1) * 4, (255, 0, 0), -1)
+        cv2.line(image, p0, p1, color, 2)
+        cv2.circle(image, p0, (i + 1) * 4, color, -1)
     return image
 
 def roi_cut(image, roi):

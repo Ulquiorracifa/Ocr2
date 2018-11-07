@@ -11,7 +11,7 @@ EPSILON = 0.0001
 ####################
 # Textline detection
 ####################
-TEXTLINE_DETECT_USE_CUDA = False  # for textline detection
+TEXTLINE_DETECT_USE_CUDA = True  # for textline detection
 TEXTLINE_TRAIN_TICKET_CAFFE = \
     dict(prototxt=os.path.join(PACKAGE_DIR, 'TextBoxes\models\\fapiao.prototxt'),
          caffemodel=os.path.join(PACKAGE_DIR, 'TextBoxes\models\\fapiao.caffemodel'))
