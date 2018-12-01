@@ -31,7 +31,7 @@ class TextlineSimpleDetect(object):
         self.threshold = thresh.HybridThreshold(**thresh_pars)
         self.debug = dict() if debug else None
 
-    def __call__(self, image):
+    def __call__(self, image, rois=[]):
         inv_fx, inv_fy = 1.0, 1.0
         if self.std_image_size is not None:
             inv_fx = image.shape[1] / self.std_image_size[0]

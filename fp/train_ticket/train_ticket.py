@@ -1,7 +1,6 @@
 import numpy as np
 import cv2
 
-
 def is_blue(image, noise=5):
     '''Return True if it is a blue ticket, otherwise red ticket'''
     b, g, r = cv2.split(image)
@@ -9,7 +8,6 @@ def is_blue(image, noise=5):
     blue_count = np.count_nonzero(b > r + noise)  # sure blue
     red_count = np.count_nonzero(r > b + noise)
     return blue_count > red_count
-
 
 class UpsideDownCheck_BlueTTK(object):
     def __init__(self, pix_remove_ratio=0.1):
@@ -33,7 +31,6 @@ class UpsideDownCheck_BlueTTK(object):
         print('mean: top {}, bot {}'.format(top_mean, bot_mean))
         return top_mean < bot_mean
 
-
 class UpsideDownCheck_v2(object):
     def __init__(self, debug=False):
         self.check_height_ratio = 0.135
@@ -51,7 +48,7 @@ class UpsideDownCheck_v2(object):
             self.debug['roi1'] = roi1
         mean0 = self._check_roi(roi0)
         mean1 = self._check_roi(roi1)
-        # print(mean0, mean1)
+        #print(mean0, mean1)
         return self._redness(mean0) < self._redness(mean1)
 
     def _check_roi(self, roi):

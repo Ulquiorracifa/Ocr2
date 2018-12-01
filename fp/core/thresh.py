@@ -113,7 +113,7 @@ class HybridThreshold(_Threshold):
         # surf = surf.astype(np.uint8)
         # surf = cv2.addWeighted(mean_surf, 0.8, otsu_surf, 0.2, 0.0)
         result = cv2.compare(imblur, surf, cv2.CMP_GT)
-
+        
         #if debug:
         #    pl.figure(figsize=(15,18))
         #    pl.subplot(4,2,1)

@@ -23,7 +23,7 @@ importlib.reload(machine)
 from ..util import data
 importlib.reload(data)
 
-if machine.is_('s11'):  # currently, only 11-server provides Caffe
+if not machine.is_('s60'):  # currently, only 11-server and dgx provides Caffe
     from ..TextBoxes import detect_textline
     importlib.reload(detect_textline)
 
@@ -44,7 +44,7 @@ class Detect(object):
         else:
             raise NotImplemented
 
-    def __call__(self, image):
+    def __call__(self, image, rois=[]):
         '''
         return list of rects'''
         if self.method == 'simple':
@@ -58,7 +58,8 @@ class Detect(object):
         if self.method == 'textboxes' or self.method == 'textboxes_gpu':
             image = data.make_caffe_data(image)
 
-        result = self.detect(image)
+        # print('#### Image shape before textline: ', image.shape)
+        result = self.detect(image, rois=rois)
         if len(result) == 0:
             return None
         result = np.array(result)
@@ -66,6 +67,16 @@ class Detect(object):
             result = np.round(result).astype(np.int64)
         if result.shape[1] > 4:
             result = result[:, :4]
+
+        # cut the rect-part that is outside of image
+        H, W = image.shape[:2]
+        for i in range(len(result)):
+            x0, y0, w, h = result[i]
+            x1, y1 = x0 + w, y0 + h
+            x0, y0 = max(x0, 0), max(y0, 0)
+            x1, y1 = min(x1, W), min(y1, H)
+            result[i] = np.array([x0, y0, x1 - x0, y1 - y0])
+            
         # remove invalid rects
         result = result[np.bitwise_and(result[:, 2] > 0, result[:, 3] > 0)]
         return result

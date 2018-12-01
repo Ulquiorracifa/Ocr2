@@ -13,6 +13,9 @@ def make_caffe_data(image):
 
 
 class DataPathText(object):
+    '''
+    Use a txt file to represent data
+    '''
     def __init__(self, dset_root, txt_file):
         if not os.path.isfile(txt_file):
             print('File {} do not exist!'.format(txt_file))

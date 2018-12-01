@@ -14,15 +14,17 @@ import fp.config
 
 def sampling(image, rect):
     rx, ry, w, h = rect
+    assert w > 0 and h > 0
     im = image[ry:ry + h, rx:rx + w]
     if h < w:
-        x = np.random.randint(w - h)
-        sub_im = im[0:h, x:x + h]
+        z = np.random.randint(w - h)
+        sub_im = im[0:h, z:z + h]
     elif h > w:
-        y = np.random.randint(h - w)
-        sub_im = im[y:y + w, 0:w]
+        z = np.random.randint(h - w)
+        sub_im = im[z:z + w, 0:w]
     else:
         sub_im = im
+    # print(rx, ry, w, h, z, sub_im.shape)
     sub_im = cv2.resize(sub_im, (28, 28))
     sub_im = sub_im.astype(np.float32) / 255. - 0.5
     sub_im = np.expand_dims(sub_im, axis=0)
@@ -46,6 +48,9 @@ class TextlineLenetClassify(object):
         '''d'''
         types = np.zeros((len(rects),), np.uint8)
         for i, rect in enumerate(rects):
+            # if rect[2] * rect[3] == 0:
+            #    types[i] = 0
+            #    continue
             sub_im = sampling(image, rect)
             pred = self.net(torch.from_numpy(sub_im).to(self.device))
             types[i] = 0 if torch.argmax(pred).item() == 0 else 1

@@ -9,7 +9,6 @@ def rotate_crop(src_image, center, angle, dsize, border_color=(255, 255, 255)):
     img = cv2.warpAffine(src_image, trans_mat, dsize, borderValue=border_color)
     return img
 
-
 # delete this if no one use this
 # use 'deskew' instead
 def warp(src_image, src_points, dsize, border_color=(255, 255, 255)):
@@ -47,3 +46,28 @@ def rotate180(image):
 
 def rotate90(image):
     return np.rot90(image, k=1, axes=(0, 1))
+
+
+def shift(image, tlx, tly):
+    '''if top-left x(y) is negative, shift to bottom-right
+    '''
+    h, w = image.shape[:2]
+    sx0 = max(tlx, 0)
+    sx1 = min(tlx + w, w)
+    sy0 = max(tly, 0)
+    sy1 = min(tly + h, h)
+    dx0 = sx0 - tlx
+    dx1 = sx1 - tlx
+    dy0 = sy0 - tly
+    dy1 = sy1 - tly
+    imagex = image.copy()
+    imagex[dy0:dy1, dx0:dx1] = image[sy0:sy1, sx0:sx1]
+    return imagex
+
+
+def pix_scale(image, pix_min=0, pix_max=255):
+    im_min, im_max = np.min(image), np.max(image)
+    image = (image.astype(np.float32) - im_min) / (im_max - im_min)
+    image = (pix_max - pix_min) * image + pix_min
+    image = np.round(image).astype(np.uint8)
+    return image

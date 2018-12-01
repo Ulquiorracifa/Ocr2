@@ -1,17 +1,14 @@
 import importlib
 
 from . import _special_vat_invoice_pipeline
-
 importlib.reload(_special_vat_invoice_pipeline)
 from ._special_vat_invoice_pipeline import SpecialVatInvoicePipeline
 
 from . import _normal_vat_invoice_pipeline
-
 importlib.reload(_normal_vat_invoice_pipeline)
 from ._normal_vat_invoice_pipeline import NormalVatInvoicePipeline
 
 from . import _elec_vat_invoice_pipeline
-
 importlib.reload(_elec_vat_invoice_pipeline)
 from ._elec_vat_invoice_pipeline import ElecVatInvoicePipeline
 
@@ -37,7 +34,8 @@ class VatInvoicePipeline(object):
     def __call__(self, image):
         res = self.pipe(image)
         self.__dict__.update(vars(self.pipe))
-
+        return res
+        
     def roi_textlines(self, roi_name):
         '''pipe.roi_textlines(roi_name) -> list of rects
         Args
@@ -68,3 +66,6 @@ class VatInvoicePipeline(object):
           a textline rect (x, y, w, h)
         '''
         return self.pipe.predict(textline_name)
+
+    def test_port(self, test_info):
+        return self.pipe.test_port(test_info)

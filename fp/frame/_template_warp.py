@@ -41,7 +41,7 @@ class Warp(object):
         else:
             X = x + para[0] + center[0]
             Y = y + para[1] + center[1]
-        # W = w * para[2] if len(para) == 4 else w
+        #W = w * para[2] if len(para) == 4 else w
         #H = h * para[3] if len(para) == 4 else h
         
         warped_abs_anchors = torch.stack((X, Y, w, h), dim=1)

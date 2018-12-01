@@ -1,7 +1,7 @@
 import SemanticCorrect.Porter
 import SemanticCorrect.SmtcCrt
 import copy
-
+import datetime
 
 class posteriorCrt():
     dic = {
@@ -42,6 +42,12 @@ class posteriorCrt():
         self.VATdic['invoiceAmount'] = ''
         self.VATdic['totalAmount'] = ''
 
+    def isDate(self, y, m, d):
+        try:
+            datetime.date(int(y), int(m), int(d))
+            return True
+        except:
+            return False
 
     def setTrainTicketPara(self, departCity, arriveCity, trainNumber, invoiceDate, seatNum, idNum, passenger,
                            totalAmount):
@@ -263,39 +269,137 @@ class posteriorCrt():
 
         # 检测总金额
         # 先取数字串，再格式
-        if self.VATdic['totalAmount'] != '' and self.VATdic['totalAmount'].find('.', 0) < 0:
+        if self.VATdic['totalAmount'] != '':  # and self.VATdic['totalAmount'].find('.', 0) < 0:
             digitStr = ''
             for c in self.VATdic['totalAmount']:
                 if c.isdigit():
                     digitStr += c
 
             if len(digitStr) > 2:
-                self.VATdic['totalAmount'] = '¥' + digitStr[:2] + '.' + digitStr[-2:]
+                self.VATdic['totalAmount'] = '¥' + digitStr[:-2] + '.' + digitStr[-2:]
             else:
                 print('总金额解析错误！')
 
         # 检测不含税金额
         # 先取数字串，再格式
-        if self.VATdic['invoiceAmount'] != '' and self.VATdic['invoiceAmount'].find('.', 0) < 0:
+        if self.VATdic['invoiceAmount'] != '':  # and self.VATdic['invoiceAmount'].find('.', 0) < 0:
             digitStr = ''
             for c in self.VATdic['invoiceAmount']:
                 if c.isdigit():
                     digitStr += c
 
             if len(digitStr) > 2:
-                self.VATdic['invoiceAmount'] = '¥' + digitStr[:2] + '.' + digitStr[-2:]
+                self.VATdic['invoiceAmount'] = '¥' + digitStr[:-2] + '.' + digitStr[-2:]
             else:
                 print('不含税金额解析错误！')
 
         # 发票日期
         digitStrDate = ''
-        if len(self.VATdic['invoiceAmount']) >= 8:
+        if len(self.VATdic['invoiceDate']) >= 8:
             for c in self.VATdic['invoiceDate']:
                 if c.isdigit():
                     digitStrDate += c
+        #
+        #     if len(digitStrDate) == 8:
+        #         self.VATdic['invoiceDate'] = digitStrDate[:4] + '年' + digitStrDate[4:6] + '月' + digitStrDate[6:] + '日'
+        iVATDate = self.VATdic['invoiceDate']
+        dind = iVATDate.find('日')
+        mind = iVATDate.find('月')
+        yind = iVATDate.find('年')
+        try:
 
+            # 日估计
+            if dind > 1 and mind >= 0 and mind < dind:  # '日''月'
+                d = iVATDate[mind + 1:dind]
+                if len(d) == 2 and int(d) > 31:
+                    d = '0' + d[1]
+
+                if yind >= 0 and yind < mind:
+                    m = iVATDate[yind + 1:mind]
+
+                else:
+                    m = iVATDate[mind - 2:mind]
+                    if int(m) > 12:
+                        m = [1]
+
+                if yind >= 2:
+                    y = '20' + iVATDate[yind - 2:yind]
+                elif mind >= 5:
+                    y = '20' + iVATDate[mind - 5:mind - 3]
+                else:
+                    y = digitStrDate[2:4]
+
+
+            elif dind > 1:  # '日'
+                d = iVATDate[dind - 2:dind]
+
+                if self.isDate('2018', iVATDate[dind - 5:dind - 3], d):
+                    m = iVATDate[dind - 5:dind - 3]
+                    mind = dind - 3
+                elif self.isDate('2018', iVATDate[dind - 4:dind - 2], d):  # 漏月
+                    m = iVATDate[dind - 4:dind - 2]
+                    mind = dind - 2
+                else:
+                    m = digitStrDate[-5:-3]
+                    mind = dind - 3
+
+                if yind >= 2:
+                    y = '20' + iVATDate[yind - 2:yind]
+                elif mind >= 5:
+                    y = '20' + iVATDate[mind - 5:mind - 3]
+                else:
+                    y = digitStrDate[2:4]
+
+            elif mind >= 0:  # '月'
+                d = iVATDate[mind + 1:mind + 3]
+
+                m = iVATDate[mind - 2:mind]  # 确定月
+
+                if yind >= 2:
+                    y = '20' + iVATDate[yind - 2:yind]
+                elif mind >= 5:
+                    y = '20' + iVATDate[mind - 5:mind - 3]
+                else:
+                    y = digitStrDate[2:4]
+
+            else:  # '日月都不存在'
+
+                if self.isDate('2018', iVATDate[-6:-4], iVATDate[-3:-1]):
+                    m = iVATDate[-6:-4]
+                    d = iVATDate[-3:-1]
+                    mind = len(iVATDate) - 4
+                elif self.isDate('2018', iVATDate[-5:-3], iVATDate[-2:]):
+                    m = iVATDate[-5:-3]
+                    d = iVATDate[-2:]
+                    mind = len(iVATDate) - 3
+                elif self.isDate('2018', iVATDate[-5:-3], iVATDate[-3:-1]):
+                    m = iVATDate[-5:-3]
+                    d = iVATDate[-3:-1]
+                    mind = len(iVATDate) - 3
+                else:
+                    m = iVATDate[-4:-2]
+                    d = iVATDate[-2:0]
+                    mind = len(iVATDate) - 2
+
+                if yind >= 2:
+                    y = '20' + iVATDate[yind - 2:yind]
+                elif mind >= 5:
+                    y = '20' + iVATDate[mind - 5:mind - 3]
+                else:
+                    y = digitStrDate[2:4]
+
+            # 月估计
+
+            print('发票日期 :' + str(self.isDate(int(y), int(m), int(d))))
+            self.VATdic['invoiceDate'] = y + '年' + m + '月' + d + '日'
+
+        except:
             if len(digitStrDate) == 8:
                 self.VATdic['invoiceDate'] = digitStrDate[:4] + '年' + digitStrDate[4:6] + '月' + digitStrDate[6:] + '日'
+            print('into posteriorCrt Date except!')
+
+
+
 
 
         # 发票代码
@@ -304,8 +408,8 @@ class posteriorCrt():
             if c.isdigit():
                 digitStrCode += c
 
-        if len(digitStrCode) > 10:
-            self.VATdic['invoiceCode'] = digitStrCode[:10]
+        if len(digitStrCode) > 12:
+            self.VATdic['invoiceCode'] = digitStrCode[:12]
 
         # 发票号码
         # 修正误识汉字
@@ -314,16 +418,14 @@ class posteriorCrt():
             if c.isdigit():
                 digitStrNo += c
 
-        if len(digitStrNo) > 8:
-            self.VATdic['invoiceNo'] = digitStrNo[-8:]
+        if len(digitStrNo) >= 8:
+            self.VATdic['invoiceNo'] = digitStrNo[:8]
 
 
-
-
-def init():
-    pC = posteriorCrt()
-    l = pC.startPorter('咱尔滨')
-    print(l)
+# def init():
+#     pC = posteriorCrt()
+#     l = pC.startPorter('咱尔滨')
+#     print(l)
 
 
 '''pC = posteriorCrt()
@@ -334,3 +436,8 @@ print(l)'''
 sp.setTrainTicketPara('', '', '', '', '', '', '','¥20.1')
 sp.startTrainTicketCrt()
 print(sp.dic)'''
+#
+# pC = posteriorCrt()
+# pC.setVATParaFromVATDict({'invoiceDate':'￥2018年05217日'})
+# pC.startVATCrt()
+# print(pC.VATdic)

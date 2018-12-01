@@ -1,6 +1,7 @@
 import importlib
 import numpy as np
 import cv2
+import time
 
 from ..core import rectangle, trans
 importlib.reload(rectangle)
@@ -50,6 +51,7 @@ class _VatInvoicePipeline(object):
 
         if self.debug is not None:
             print('[1/5]\nDetect surface box... ')
+            _t_ = time.time()
         
         _, wireframe_box, _ = self.detect_wireframe(gray_image)
         center, (size0, size1), angle = wireframe_box
@@ -65,6 +67,9 @@ class _VatInvoicePipeline(object):
                                                                            wireframe_box[1][0],
                                                                            wireframe_box[1][1],
                                                                            wireframe_box[2]))
+            _t__ = time.time()
+            print('* Ellapsed {} s.'.format(_t__ - _t_))
+            _t_ = _t__
             print('[2/5]\nExtract surface image... ')
 
         surface_points, surface_image = self.extract_surface(image, wireframe_box)
@@ -77,12 +82,19 @@ class _VatInvoicePipeline(object):
             print('Done.')
             print('* surface_points:\n', surface_points)
             print('* surface_image.shape: ', surface_image.shape)
+            _t__ = time.time()
+            print('* Ellapsed {} s.'.format(_t__ - _t_))
+            _t_ = _t__
             print('[3/5]\nDetect wirframe...')
-        # get rois
-        frame_points, _, init_rectr = self.detect_wireframe(gray_surface_image)
-        # print('finish detect points')
-        frame_points = np.array(frame_points, dtype=np.float32)
-        rectr = self.match_wireframe(frame_points, image_size, init_rectr)
+
+        #######################
+        # Process in std image
+        # frame_points, _, init_rectr = self.detect_wireframe(gray_surface_image)
+        # frame_points = np.array(frame_points, dtype=np.float32)
+        # DO Not detect again
+        # rectr = self.match_wireframe(frame_points, image_size, init_rectr)
+        init_rectr = self.extract_surface.rectr()
+        rectr = self.match_wireframe.fake(init_rectr)
         W, H = image_size
         xr, yr, wr, hr = rectr
         self.roi['general'] = (xr * W).item(), (yr * H).item(), (wr * W).item(), (hr * H).item()
@@ -90,6 +102,7 @@ class _VatInvoicePipeline(object):
         self.roi['tax_free'] = self.match_wireframe.roi(image_size, 1, 5)  # net price, tax-free
         self.roi['money'] = self.match_wireframe.roi(image_size, 2, 1)
         self.roi['saler'] = self.match_wireframe.roi(image_size, 3, 1)
+        self.roi['memo'] = self.match_wireframe.roi(image_size, 3, 3)
         self.roi['header0'] = self.match_wireframe.roi(image_size, -1, 0)
         self.roi['header1'] = self.match_wireframe.roi(image_size, -1, 1)
         self.roi['header2'] = self.match_wireframe.roi(image_size, -1, 2)
@@ -99,6 +112,9 @@ class _VatInvoicePipeline(object):
         ############
         if self.debug is not None:
             print('Done.')
+            _t__ = time.time()
+            print('* Ellapsed {} s.'.format(_t__ - _t_))
+            _t_ = _t__
             print('[4/5]\nDetect textlines...')
             
         if self.detect_textlines is None:
@@ -113,7 +129,7 @@ class _VatInvoicePipeline(object):
             input_image = surface_image
         else:
             raise NotImplemented
-        detected_rects = self.detect_textlines(input_image)
+        detected_rects = self.detect_textlines(input_image, self.roi)
         if detected_rects is None or len(detected_rects) == 0:
             self.exit_msg = 'Detected zero textlines'
             return False
@@ -124,6 +140,9 @@ class _VatInvoicePipeline(object):
 
         if self.debug is not None:
             print('Done.')
+            _t__ = time.time()
+            print('* Ellapsed {} s.'.format(_t__ - _t_))
+            _t_ = _t__
             print('[5/5]\nClassify textlines...')
         
         if self.classify_textlines is None:
@@ -138,7 +157,11 @@ class _VatInvoicePipeline(object):
         if self.debug is not None:
             self.debug['result'] = self._draw_result(surface_image)
             print('Done. END.')
+            _t__ = time.time()
+            print('* Ellapsed {} s.'.format(_t__ - _t_))
+            _t_ = _t__
 
+        self.exit_msg = 'Done'
         return True
         
     def reset(self):
@@ -146,13 +169,21 @@ class _VatInvoicePipeline(object):
         self.textlines_type = None
         self.rectr = None
         self.roi = dict()
+        self.exit_msg = None
 
-    def roi_textlines(self, roi_name):
+    def roi_textlines(self, roi_name, x_range=(0., 1.), y_range=(0., 1.)):
+        assert len(x_range) == 2 and 0 <= x_range[0] < x_range[1] <= 1.0
+        assert len(y_range) == 2 and 0 <= y_range[0] < y_range[1] <= 1.0
         assert roi_name in self.roi.keys()
-
+        x, y, w, h = self.roi[roi_name]
+        xr = x + int(w * x_range[0])
+        yr = y + int(h * y_range[0])
+        wr = int(w * (x_range[1] - x_range[0]))
+        hr = int(h * (y_range[1] - y_range[0]))
+        target_roi = xr, yr, wr, hr
         _textlines = []
         for textline in self.textlines:
-            rect_inter = rectangle.intersect(textline, self.roi[roi_name])
+            rect_inter = rectangle.intersect(textline, target_roi)
             if rect_inter[2] <= 0 or rect_inter[3] <= 0:
                 continue
             area_inter = rect_inter[2] * rect_inter[3]
@@ -183,14 +214,21 @@ class _VatInvoicePipeline(object):
         return predict_[textline_name]()
 
     def _predict(self, textline_name, detect_revise=True):
+        '''predict the rect by wireframe, and revise by finding 
+        the textline with best Iou
+        '''
         if textline_name not in self.predict_pars.keys():
             return None
+        # predict by wireframe detection and relative position
         rect = relative_to_rect(self.predict_pars[textline_name], self.roi['general'])
+        rect = np.array(rect)
+        # if ne need of revision, just return prediction
         if detect_revise == False:
             return rect
+        # find the textline that has best IoU with prediction
         ious = [rectangle.iou(rect, r) for r in self.textlines]
         best_match_i = np.argmax(ious)
-        if ious[best_match_i] > 0.5:
+        if ious[best_match_i] > 0.3:  # the IoU threshold is fixed to 0.3
             return self.textlines[best_match_i]
         else:
             return rect
@@ -205,7 +243,8 @@ class _VatInvoicePipeline(object):
         return self._predict('title', detect_revise=False)
 
     def _predict_time(self):
-        # TODO
+        '''select the textline that is the most bottom-right in header2 region
+        '''
         if 'time' not in self.predict_pars.keys():
             rects = self.roi_textlines('header2')
             rects = np.array([rect for rect in rects if rect[2] > 4.0 * rect[3]])
@@ -220,6 +259,7 @@ class _VatInvoicePipeline(object):
         return self._predict('verify')
 
     def _predict_tax_free(self):
+        '''select the bottom textline in tax_free region'''
         rects = self.roi_textlines('tax_free')
         if len(rects) == 0:
             return None
@@ -238,14 +278,29 @@ class _VatInvoicePipeline(object):
 
         keys = {'special': ['type', 'serial', 'title', 'time', 'tax_free_money'],
                 'normal': ['type', 'serial', 'title', 'time', 'tax_free_money', 'verify'],
-                'elec': ['type', 'serial', 'title', 'time', 'tax_free_money', 'verify'],}
-        assert self.invoice_type is not None
+                'elec': ['type', 'serial', 'title', 'time', 'tax_free_money', 'verify'], }
+        #assert self.invoice_type is not None
         for key in keys[self.invoice_type]:
             _rect = self.predict(key)
             if _rect is None:
                 continue
-            x, y, w, h = _rect
-            x, y, w, h = int(x), int(y), int(w), int(h)
-            cv2.rectangle(image, (x, y), (x + w, y + h), (255, 255, 0), thickness=4)
+            if len(_rect.shape) == 1:
+                _rect = np.array([_rect])
+            for x, y, w, h in _rect:
+                x, y, w, h = int(x), int(y), int(w), int(h)
+                cv2.rectangle(image, (x, y), (x + w, y + h), (255, 255, 0), thickness=4)
         
         return image
+
+    def test_port(self, test_info):
+        '''used for batch test'''
+        if test_info == 'wireframe':
+            h, w = self.surface_image.shape[:2]
+            image_size = (w, h)
+            roi = self.match_wireframe.roi(image_size, 0, 0)
+            y0, y1 = int(roi[1]), int(roi[1] + roi[3])
+            x0, x1 = int(roi[0]), int(roi[0] + roi[2])
+            # print(x0, x1, y0, y1)
+            return self.surface_image[y0:y1, x0:x1]
+        else:
+            raise NotImplemented

@@ -20,7 +20,6 @@ from aip import AipOcr
 import json
 
 
-
 # import jsonpath
 
 
@@ -762,7 +761,10 @@ def cropToOcr(filePath, recT, typeT, debug=False, isusebaidu=False):
 
     for x in recT:
         sp = img.crop((recT[x][0], recT[x][1], recT[x][0] + recT[x][2], recT[x][1] + recT[x][3]))
+        if recT[x][0] == 0 and recT[x][1] == 0 and recT[x][2] == 0 and recT[x][3] == 0:
+            print("¡ü--------¡ü--------¡ü--------¡ü recT : " + x + " is error¡ü--------¡ü--------¡ü")
 
+            continue
         sFPN = jwkj_get_filePath_fileName_fileExt(filePath)[0] + "tmp/" + jwkj_get_filePath_fileName_fileExt(filePath)[
             1] + "/" + jwkj_get_filePath_fileName_fileExt(filePath)[
                    1] + "_" + x + ".jpg"
@@ -816,7 +818,6 @@ def cropToOcr(filePath, recT, typeT, debug=False, isusebaidu=False):
         js.setValueWithDict(pC.dic)
         jsoni = js.dic
 
-
     return json.dumps(jsoni).encode().decode("unicode-escape")
 
 
@@ -851,7 +852,6 @@ def detect(filePath, recT, type):
 
 def newOcr(filepath, model):
     ocr.OCR(filepath, base_model=model)
-
 
 
 def __init__():

@@ -83,4 +83,40 @@
             <ymax>1233</ymax>
         </bndbox>
     </object>
+    <object>
+        <name>general</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
+        <bndbox>
+            <xmin>145</xmin>
+            <ymin>363</ymin>
+            <xmax>2538</xmax>
+            <ymax>1480</ymax>
+        </bndbox>
+    </object>
+    <object>
+        <name>invoiceCodeG</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
+        <bndbox>
+            <xmin>370</xmin>
+            <ymin>117</ymin>
+            <xmax>897</xmax>
+            <ymax>223</ymax>
+        </bndbox>
+    </object>
+    <object>
+        <name>invoiceNoG</name>
+        <pose>Unspecified</pose>
+        <truncated>0</truncated>
+        <difficult>0</difficult>
+        <bndbox>
+            <xmin>1911</xmin>
+            <ymin>117</ymin>
+            <xmax>2332</xmax>
+            <ymax>221</ymax>
+        </bndbox>
+    </object>
 </annotation>

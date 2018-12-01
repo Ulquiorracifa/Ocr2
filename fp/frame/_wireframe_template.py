@@ -82,7 +82,7 @@ class WireframeTemplateData(object):
                 x_ratiox.append(x_ratios)
 
             # print(len(y_ratios))
-            # print(len(x_ratiox))
+            #print(len(x_ratiox))
             #for x_ratios in x_ratiox:
             #    print('  ', len(x_ratios))
             batch_y_ratios.append(y_ratios)
@@ -217,7 +217,7 @@ class WireframeTemplate(object):
 
         last_loss = None
         rectr.requires_grad = True
-        # self.max_iteration = 100
+        #self.max_iteration = 100
         for i in range(self.max_iteration): # 
             warped_points = self._warp(rectr)
             loss = self.loss(warped_points, rel_detected_points)
@@ -238,12 +238,16 @@ class WireframeTemplate(object):
             if self.debug is not None and i % (self.max_iteration // 10) == 0:
                 t_str = ' '.join(['{:7.4f}'.format(t) for t in rectr])
                 g_str = ' '.join(['{:7.4f}'.format(t) for t in rectr.grad])
-                print('{:4d}|{:6.4f}|{:28s}|{:28s}'.format(i, loss.item(), t_str, g_str))
+                print('{:4d}|{:6.4f}|{:28s}|{:28s}'.format(i, loss.item(), t_str, g_str))   
 
         self.rectr = rectr        
         # slice rects
         return rectr.detach().cpu()
 
+    def fake(self, init_rectr):
+        self.rectr = torch.tensor(init_rectr)
+        return self.rectr.detach().cpu()
+    
     def roi(self, image_size, row, col):
         assert self.rectr is not None
         W, H = image_size
@@ -262,7 +266,7 @@ class WireframeTemplate(object):
             else:
                 x0 = int(round((x + w * fx1).item()))
                 x1 = W
-            return x0, y0, x1 - x0, y1-y0
+            return x0, y0, x1 - x0, y1 -y0
         
         y_ratios = self.data.y_ratios
         if row == 0:
@@ -291,4 +295,4 @@ class WireframeTemplate(object):
         y0 = int(round((y + h * yr0).item()))
         y1 = int(round((y + h * yr1).item()))
 
-        return x0, y0, x1 - x0, y1-y0
+        return x0, y0, x1 - x0, y1 -y0

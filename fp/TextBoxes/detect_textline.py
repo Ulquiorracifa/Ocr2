@@ -3,30 +3,45 @@ import os
 
 os.environ['GLOG_minloglevel'] = '3'
 
+import cv2
 import glob
 import pandas
 import sys
 import datetime
+import caffe
 
-from .nms import nms
-from .util import timewatch
-from .rects_adjust import rects_adjust
+_version_type_ = 'release'
 
-from .. import config
+if _version_type_ == 'debug':
+    from nms import nms
+    from util import timewatch
+    from caffe_config import model_config, selected_rois_keys
+    from rects_adjust import rects_adjust
+
+    if True:
+        caffe.set_device(1)
+        caffe.set_mode_gpu()
+    else:
+        caffe.set_mode_cpu()
+else:
+    from .nms import nms
+    from .util import timewatch, drawboxes
+    from .caffe_config import model_config, selected_rois_keys
+    from .rects_adjust import rects_adjust
+    from .. import config
+
+    if config.TEXTLINE_DETECT_USE_CUDA is True:
+        caffe.set_device(1)
+        caffe.set_mode_gpu()
+    else:
+        caffe.set_mode_cpu()
+
 
 ## load caffe package
 # pwd = os.getcwd()
 caffe_root = os.path.dirname(os.path.realpath(__file__))  # Make sure this file is on the caffe root path
 # os.chdir(caffe_root)
 sys.path.insert(0, os.path.join(caffe_root, 'python'))
-import caffe
-
-if config.TEXTLINE_DETECT_USE_CUDA is True:
-    caffe.set_device(0)
-    caffe.set_mode_gpu()
-else:
-    caffe.set_mode_cpu()
-
 
 class _Detect(object):
     def __init__(self):
@@ -40,31 +55,91 @@ class TextBoxesDetect(_Detect):
     def __init__(self, \
                  model_def='models/fapiao.prototxt', \
                  model_weights='models/fapiao.caffemodel', \
-                 scales=((900, 600), (1600, 1000), (1600, 1600)), \
+                 scales=((170, 420), (340, 840), (680, 840)), \
                  confidence_thres=0.4):  #
+
+        if True:
+            caffe.set_device(0)
+            caffe.set_mode_gpu()
+        else:
+            caffe.set_mode_cpu()
+
+        tim = timewatch.start_new()
         self.model_def = model_def
         self.model_weights = model_weights
-        print(self.model_def, self.model_weights)
+        # print(self.model_def,self.model_weights)
         self.net = caffe.Net(model_def,  # defines the structure of the model
                              model_weights,  # contains the trained weights
                              caffe.TEST)  # use test mode (e.g., don't perform dropout)
         self.scales = scales
         self.confidence_thres = confidence_thres
+        self.predictions = []
+        keys = list(model_config.keys())
+        self.model_config_key = None  # keys[0]
+        self.postprocess = True
+        # print("load model parameters: ", tim.get_elapsed_seconds(), " seconds")
 
-    def __call__(self, image):
-        predictions = self.detect(image)
-        return predictions
+    def __call__(self, image, rois=dict(), model_key='700x700-1'):
+        tim = timewatch.start_new()
+        if model_key is not None and model_key != self.model_config_key:
+            cur_path = os.getcwd()
+            os.chdir(os.path.dirname(__file__))
+            self.load_model_config(model_key)
+            os.chdir(cur_path)
+            self.model_config_key = model_key
+        roi_num = len(rois)
+        if roi_num > 0:
+            predictions = []
+            for _key in rois.keys():
+                if _key in selected_rois_keys or _version_type_ == 'debug':
+                    _roi = rois[_key]
+                    roi = [int(x) for x in _roi]
+                    prediction = self.detect_roi(image, roi)
+                    predictions += prediction
+            self.predictions = predictions
+        else:
+            self.predictions = self.detect(image)
+        print("Textline Extraction Done in : ", tim.get_elapsed_seconds(), " seconds")
+        # self.draw_boxes_tofile(image,'/home/tangpeng/temp/'+str(tim.get_time())+'.jpg')
+        return self.predictions
 
-    def detect_to_cvs(self, image, cvs_file=None):
-        predictions = self.detect(image)
+    def draw_boxes_tofile(self, image, filepath):
+        sim = (image * 255.0).astype(np.uint8)
+        drawboxes(sim, self.predictions)
+        cv2.imwrite(filepath, sim)
+        print('Text Boxes are drawed in ', filepath)
+
+    '''
+    roi = [x,y,w,h]
+    '''
+
+    def detect_roi(self, image, roi):
+        assert roi[1] < roi[1] + roi[3]
+        assert roi[0] < roi[0] + roi[2]
+        im = image[roi[1]:roi[1] + roi[3], roi[0]:roi[0] + roi[2], :]
+        prediction = self.detect(im)
+        for i in range(len(prediction)):
+            prediction[i][0] += roi[0]
+            prediction[i][1] += roi[1]
+        return prediction
+
+    def save_predictions_to_cvs(self, cvs_file=None):
         if cvs_file is not None:
-            df = pandas.DataFrame(predictions, columns=["x", "y", "width", "height", "confidence"])
+            df = pandas.DataFrame(self.predictions, columns=["x", "y", "width", "height", "confidence"])
             df.to_csv(cvs_file, index=False)
 
     def set_net_model(self, model_def, model_weights):
         self.model_def = model_def
         self.model_weights = model_weights
-        self.net = caffe.Net(model_def, model_weights, caffe.TEST)    
+        self.net = caffe.Net(model_def, model_weights, caffe.TEST)
+
+    def load_model_config(self, config_name):
+        self.set_net_model(model_config[config_name]['model_def'], \
+                           model_config[config_name]['model_weights'])
+        self.scales = model_config[config_name]['scales']
+
+    def set_postprocess(self, valid=True):
+        self.postprocess = valid
 
     def detect(self, image):
         # image=caffe.io.load_image(image_file)
@@ -72,8 +147,13 @@ class TextBoxesDetect(_Detect):
         print(image.shape)
         _rlts=[]
         for scale in self.scales:
-            image_resize_height = scale[0]
-            image_resize_width = scale[1]
+            # print('scale',scale)
+            if type(scale[0]) is float:
+                image_resize_height = int(image_height * scale[0])  # height
+                image_resize_width = int(image_width * scale[1])  # width
+            else:
+                image_resize_height = scale[0]  ##0 height
+                image_resize_width = scale[1]  ##1 width
             transformer = caffe.io.Transformer({'data': (1, 3, image_resize_height, image_resize_width)})
             transformer.set_transpose('data', (2, 0, 1))
             transformer.set_mean('data', np.array([104, 117, 123]))  # mean pixel
@@ -94,7 +174,7 @@ class TextBoxesDetect(_Detect):
             det_xmin = detections[0, 0, :, 3]
             det_ymin = detections[0, 0, :, 4]
             det_xmax = detections[0, 0, :, 5]
-            det_ymax = detections[0, 0, :,6]
+            det_ymax = detections[0,0,:,6]
             top_indices = [i for i, conf in enumerate(det_conf) if conf >= self.confidence_thres]
             top_conf = det_conf[top_indices]
             top_xmin = det_xmin[top_indices]
@@ -112,11 +192,11 @@ class TextBoxesDetect(_Detect):
                 xmax = min(image.shape[1] - 1, xmax)
                 ymax = min(image.shape[0] - 1, ymax)
                 score = top_conf[i]
-                dt_result = [xmin, ymin, xmax, ymin, xmax, ymax, xmin, ymax, score]
+                dt_result = [xmin, ymin, xmax, ymin, xmax, ymax, xmin, ymax,score]
                 _rlts.append(dt_result)
 
         _rlts = sorted(_rlts, key=lambda x: -float(x[8]))
-        nms_flag = nms(_rlts, 0.03)
+        nms_flag = nms(_rlts,0.01)
         det_results = []
         for k, dt in enumerate(_rlts):
             if nms_flag[k]:
@@ -127,9 +207,13 @@ class TextBoxesDetect(_Detect):
                 conf = dt[8]
                 det_results.append([xmin, ymin, xmax - xmin + 1, ymax - ymin + 1, conf])
 
-        # adjust the result rects
-        det_results = rects_adjust(image, det_results)
-        return det_results  # [[(x,y,width,height),confidence],......]
+        if self.postprocess:
+            # adjust the result rects
+            predictions = rects_adjust((image * 255.0).astype(np.uint8), det_results, extend_max_ratio=0.6)
+        else:
+            predictions = det_results
+
+        return predictions  # [[(x,y,width,height),confidence],......]
 
 
 if __name__ == "__main__":
@@ -142,7 +226,7 @@ if __name__ == "__main__":
 
     detector = TextBoxesDetect()
     for im_name in im_names:
-        cvs_file = im_name.replace('.jpg', '.csv')
+        cvs_file = im_name.replace('.jpg','.csv')
         tim = timewatch.start_new()
         im = caffe.io.load_image(im_name)
         #im =cv2.imread(im_name,1)
