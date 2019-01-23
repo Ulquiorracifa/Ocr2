@@ -1,16 +1,21 @@
 import importlib
 
+from .. import config
 from . import _special_vat_invoice_pipeline
-importlib.reload(_special_vat_invoice_pipeline)
-from ._special_vat_invoice_pipeline import SpecialVatInvoicePipeline
-
 from . import _normal_vat_invoice_pipeline
-importlib.reload(_normal_vat_invoice_pipeline)
-from ._normal_vat_invoice_pipeline import NormalVatInvoicePipeline
-
 from . import _elec_vat_invoice_pipeline
-importlib.reload(_elec_vat_invoice_pipeline)
+
+importlib.reload(config)
+if not config.RELEASE:
+    importlib.reload(_special_vat_invoice_pipeline)
+    importlib.reload(_normal_vat_invoice_pipeline)
+    importlib.reload(_elec_vat_invoice_pipeline)
+
+from ._special_vat_invoice_pipeline import SpecialVatInvoicePipeline
+from ._normal_vat_invoice_pipeline import NormalVatInvoicePipeline
 from ._elec_vat_invoice_pipeline import ElecVatInvoicePipeline
+
+__all__ = ['VatInvoicePipeline']
 
 class VatInvoicePipeline(object):
     def __init__(self, invoice_type, pars={}, debug=False):
@@ -24,8 +29,8 @@ class VatInvoicePipeline(object):
                 dict(textline_method='textboxes') (use deeplearning)
         '''
         _pipe = {'special': SpecialVatInvoicePipeline,
-                 'normal': NormalVatInvoicePipeline,
-                 'elec': ElecVatInvoicePipeline}
+                 'normal':  NormalVatInvoicePipeline,
+                 'elec':    ElecVatInvoicePipeline}
         if invoice_type not in _pipe.keys():
             raise NotImplemented
         self.invoice_type = invoice_type
@@ -52,7 +57,7 @@ class VatInvoicePipeline(object):
           a list of textline rects, which is inside of specified ROI
         '''
         return self.pipe.roi_textlines(roi_name)
-
+    
     def predict(self, textline_name):
         '''pipe.predict(textline_name) -> rect
         Args
@@ -66,6 +71,6 @@ class VatInvoicePipeline(object):
           a textline rect (x, y, w, h)
         '''
         return self.pipe.predict(textline_name)
-
+        
     def test_port(self, test_info):
         return self.pipe.test_port(test_info)

@@ -1,4 +1,7 @@
 import importlib
 
+from .. import config
 from . import pipeline
-importlib.reload(pipeline)
+
+if not config.RELEASE:
+    importlib.reload(pipeline)

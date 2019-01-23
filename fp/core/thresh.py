@@ -38,6 +38,13 @@ def local_mean_surface(image, ksize, c):
     return surf
 
 
+def local_gauss_surface(image, ksize, c):
+    sigmaX = ksize[0] * 0.55
+    surf = cv2.GaussianBlur(image, ksize=ksize, sigmaX=sigmaX)
+    surf[surf <= c] = 0
+    surf[surf > c] -= c
+    return surf
+
 class _Threshold(object):
     def __init__(self):
         pass
@@ -83,17 +90,21 @@ class LocalGaussianThreshold(_Threshold):
 
 
 class HybridThreshold(_Threshold):
-    def __init__(self, mix_ratio=0.2, rows=8, cols=8, ksize=11, c=3):
+    def __init__(self, mix_ratio=0.2, rows=8, cols=8, ksize=11, c=3, local='mean'):
         self.rows = rows
         self.cols = cols
         self.ksize = (ksize, ksize)
         self.c = c
         self.mix_ratio = mix_ratio
-
+        if local == 'mean':
+            self.local_surface = local_mean_surface
+        else:
+            self.local_surface = local_gauss_surface
+    
     def __call__(self, image):
         otsu_surf = adaptive_otsu_surface(image, self.rows, self.cols)
-        mean_surf = local_mean_surface(image, self.ksize, self.c)
-        surf = cv2.addWeighted(otsu_surf, self.mix_ratio,
+        mean_surf = self.local_surface(image, self.ksize, self.c)
+        surf = cv2.addWeighted(otsu_surf, self.mix_ratio, 
                                mean_surf, 1. - self.mix_ratio, 0)
 
         imblur = cv2.GaussianBlur(image, (3, 3), 1.2)
@@ -133,5 +144,5 @@ class HybridThreshold(_Threshold):
         #    pl.subplot(4,2,8)
         #    pl.imshow(result, 'gray')
         #    
-            
+
         return result

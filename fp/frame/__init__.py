@@ -1,19 +1,18 @@
 import importlib
 
+from .. import config
 from . import surface
-importlib.reload(surface)
-
 from . import textline
-importlib.reload(textline)
-
 from . import wireframe
-importlib.reload(wireframe)
-
 from . import template_data
-importlib.reload(template_data)
-
 from . import template
-importlib.reload(template)
-
 from . import table
-importlib.reload(table)
+
+importlib.reload(config)
+if not config.RELEASE:
+    importlib.reload(surface)
+    importlib.reload(textline)
+    importlib.reload(wireframe)
+    importlib.reload(template_data)
+    importlib.reload(template)
+    importlib.reload(table)
