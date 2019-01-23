@@ -235,7 +235,7 @@ def copy_dict(d):
 
 
 def getDistanceBetw(str1, str2):
-    dc = ComputeDistance.load_dict('.json')  # 取全部形似字
+    dc = ComputeDistance.load_dict('.json')  # 取全部形似字(缺省)
     wt = dc[str1][str2]
 
     # wordTemp接口getFamiliar(word)
